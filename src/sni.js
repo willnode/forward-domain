@@ -10,7 +10,7 @@ const {
 const { default: AwaitLock } = require('await-lock');
 const record_email_prefix = 'forward-domain-cert-maintainer=';
 const client = new certnode.Client();
-const certsDir = path.join(__dirname, '.certs');
+const certsDir = path.join(__dirname, '../.certs');
 
 /**
  * @type {Object<string, {cert: any, key: any, expire: number}>}

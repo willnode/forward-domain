@@ -1,5 +1,4 @@
 const fs = require('fs')
-const http = require('http')
 const path = require('path')
 const {
   promisify
@@ -105,16 +104,12 @@ class Client {
       challenge
     } = await this.authz(authzUrls[0])
 
-    console.log('step 1');
     await this.completeChallenge(challenge)
-    console.log('step 2');
     await this.pollAuthz(authzUrls[0])
-    console.log('step 3');
     const {
       certificate,
       privateKeyData
     } = await this.finalizeOrder(finalizeUrl, domain, email)
-    console.log('step 4');
 
     return {
       certificate,

@@ -6,6 +6,7 @@ const {
 const {
     findTxtRecord
 } = require('./util');
+const combineURLs = require('axios/lib/helpers/combineURLs');
 
 /**
  * @type {Object<string, {expire: number, expand: boolean, url: string}>}
@@ -36,6 +37,7 @@ const listener = async function (/** @type {import('http').IncomingMessage} */ r
         if (req.url.startsWith(acme_prefix)) {
             if (client.challengeCallbacks) {
                 res.writeHead(200, {
+                    // This is important :)
                     'content-type': 'application/octet-stream'
                 });
                 res.write(client.challengeCallbacks());
@@ -51,7 +53,7 @@ const listener = async function (/** @type {import('http').IncomingMessage} */ r
             resolveCache[req.headers.host] = cache;
         }
         res.writeHead(301, {
-            'Location': cache.expand ? path.join(cache.url, req.url) : cache.url,
+            'Location': cache.expand ? combineURLs(cache.url, req.url) : cache.url,
         });
         return;
     } catch (error) {
