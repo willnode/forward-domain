@@ -26,9 +26,9 @@ How it is possible?
 To forward from `www.old.com` to `old.com`, add these records to your DNS:
 
 ```
-old.com   IN    CNAME   r.forwarddomain.net
-old.com   IN    TXT     forward-domain=https://new.net/*
-old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
+www.old.com   IN    CNAME   r.forwarddomain.net
+www.old.com   IN    TXT     forward-domain=https://old.com/*
+www.old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
 ```
 
 > IMPORTANT: replace `<your email address>` with your email address!
