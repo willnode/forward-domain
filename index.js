@@ -15,18 +15,20 @@ const resolveCache = {};
 
 async function buildCache(host) {
     const resolve = await axios(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=TXT`);
-    for (const head of resolve.data.Answer) {
-        let url = head.data.slice(record_prefix.length);
-        let expand = false;
-        if (url.endsWith('*')) {
-            url = url.substr(0, -1);
-            expand = true;
+    if (resolve.data.Answer) {
+        for (const head of resolve.data.Answer) {
+            let url = head.data.slice(record_prefix.length);
+            let expand = false;
+            if (url.endsWith('*')) {
+                url = url.substr(0, -1);
+                expand = true;
+            }
+            return {
+                url,
+                expand,
+                expire: Date.now() + Math.max(head.TTL, 86400) * 1000,
+            };
         }
-        return {
-            url,
-            expand,
-            expire: Date.now() + Math.max(head.TTL, 86400) * 1000,
-        };
     }
     throw new Error(record_prefix + ' TXT is missing');
 }
@@ -38,11 +40,12 @@ const server = http.createServer(async function (req, res) {
             cache = await buildCache(req.headers.host);
             resolveCache[req.headers.host] = cache;
         }
-        req.statusCode = 301;
-        req.headers.location = cache.expand ? cache.url + req.url : cache.url;
+        res.writeHead(301, {
+            'Location': cache.expand ? cache.url + req.url : cache.url,
+        });
         return;
     } catch (error) {
-        res.statusCode = 400;
+        res.writeHead(400);
         res.write(error.message || 'Unknown error');
     } finally {
         res.end();

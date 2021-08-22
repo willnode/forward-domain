@@ -29,8 +29,10 @@ function getCertCachePath(host) {
 }
 async function findMaintainerEmail(host) {
     const resolve = await axios(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=TXT`);
-    for (const head of resolve.data.Answer) {
-        return head.data.slice(record_email_prefix.length);
+    if (resolve.data.Answer) {
+        for (const head of resolve.data.Answer) {
+            return head.data.slice(record_email_prefix.length);
+        }
     }
     throw new Error(record_email_prefix + ' TXT is missing');
 }
