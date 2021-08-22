@@ -31,6 +31,8 @@ async function findMaintainerEmail(host) {
     const resolve = await axios(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
+            if (!head.data.startsWith(record_email_prefix))
+                continue;
             return head.data.slice(record_email_prefix.length);
         }
     }
