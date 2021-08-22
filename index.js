@@ -7,6 +7,7 @@ const record_prefix = 'forward-domain=';
 const {
     default: axios
 } = require('axios');
+const path = require('path');
 
 /**
  * @type {Object<string, {expire: number, expand: boolean, url: string}>}
@@ -46,7 +47,7 @@ const server = http.createServer(async function (req, res) {
             resolveCache[req.headers.host] = cache;
         }
         res.writeHead(301, {
-            'Location': cache.expand ? cache.url + req.url : cache.url,
+            'Location': cache.expand ? path.join(cache.url, req.url) : cache.url,
         });
         return;
     } catch (error) {
