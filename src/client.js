@@ -34,9 +34,11 @@ const acme_prefix = '/.well-known/acme-challenge/';
 const listener = async function (/** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
     try {
         if (req.url.startsWith(acme_prefix)) {
-            const token = req.url.slice(acme_prefix.length);
-            if (client.challengeCallbacks[token]) {
-                res.write(client.challengeCallbacks[token]());
+            if (client.challengeCallbacks) {
+                res.writeHead(200, {
+                    'content-type': 'application/octet-stream'
+                });
+                res.write(client.challengeCallbacks());
             } else {
                 res.writeHead(404)
             }

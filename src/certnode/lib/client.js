@@ -1,12 +1,24 @@
 const fs = require('fs')
 const http = require('http')
 const path = require('path')
-const { promisify } = require('util')
-const { fromKeyLike } = require('jose-node-cjs-runtime/jwk/from_key_like')
-const { generateKeyPair } = require('jose-node-cjs-runtime/util/generate_key_pair')
-const { calculateThumbprint } = require('jose-node-cjs-runtime/jwk/thumbprint')
-const { SignJWT } = require('jose-node-cjs-runtime/jwt/sign')
-const { CompactSign } = require('jose-node-cjs-runtime/jws/compact/sign')
+const {
+  promisify
+} = require('util')
+const {
+  fromKeyLike
+} = require('jose-node-cjs-runtime/jwk/from_key_like')
+const {
+  generateKeyPair
+} = require('jose-node-cjs-runtime/util/generate_key_pair')
+const {
+  calculateThumbprint
+} = require('jose-node-cjs-runtime/jwk/thumbprint')
+const {
+  SignJWT
+} = require('jose-node-cjs-runtime/jwt/sign')
+const {
+  CompactSign
+} = require('jose-node-cjs-runtime/jws/compact/sign')
 const pem = require('pem')
 const common = require('./common')
 const request = require('./request')
@@ -21,13 +33,13 @@ class Client {
   /**
    * @param  {String} [directoryUrl]
    */
-  constructor (directoryUrl = common.DIRECTORY_URL) {
+  constructor(directoryUrl = common.DIRECTORY_URL) {
     this.accountPrivateJwk = null
     this.accountPrivateKey = null
     this.accountPublicJwk = null
     this.accountPublicKey = null
     this.directoryUrl = directoryUrl
-    this.challengeCallbacks = {}
+    this.challengeCallbacks = null
     this.hasDirectory = false
     this.myAccountUrl = ''
     this.newAccountUrl = ''
@@ -45,7 +57,7 @@ class Client {
    *
    * @return {Promise}
    */
-  exportAccountKeyPair (dirname, passphrase) {
+  exportAccountKeyPair(dirname, passphrase) {
     const privateKeyFile = path.join(dirname, 'privateKey.pem')
     const publicKeyFile = path.join(dirname, 'publicKey.pem')
 
@@ -60,8 +72,11 @@ class Client {
    *
    * @return {Promise}
    */
-  async generateAccountKeyPair () {
-    const { privateKey, publicKey } = await generateKeyPair(common.ACCOUNT_KEY_ALGORITHM)
+  async generateAccountKeyPair() {
+    const {
+      privateKey,
+      publicKey
+    } = await generateKeyPair(common.ACCOUNT_KEY_ALGORITHM)
 
     this.accountPrivateKey = privateKey
     this.accountPublicKey = publicKey
@@ -77,19 +92,34 @@ class Client {
    *
    * @return {Promise}
    */
-  async generateCertificate (domain, email) {
+  async generateCertificate(domain, email) {
     await this.directory()
     await this.newNonce()
     await this.newAccount(email)
 
-    const { authzUrls, finalizeUrl } = await this.newOrder(domain)
-    const { challenge } = await this.authz(authzUrls[0])
+    const {
+      authzUrls,
+      finalizeUrl
+    } = await this.newOrder(domain)
+    const {
+      challenge
+    } = await this.authz(authzUrls[0])
 
+    console.log('step 1');
     await this.completeChallenge(challenge)
+    console.log('step 2');
     await this.pollAuthz(authzUrls[0])
-    const { certificate, privateKeyData } = await this.finalizeOrder(finalizeUrl, domain, email)
+    console.log('step 3');
+    const {
+      certificate,
+      privateKeyData
+    } = await this.finalizeOrder(finalizeUrl, domain, email)
+    console.log('step 4');
 
-    return { certificate, privateKeyData }
+    return {
+      certificate,
+      privateKeyData
+    }
   }
 
   /**
@@ -100,7 +130,7 @@ class Client {
    *
    * @return {Promise}
    */
-  async importAccountKeyPair (dirname, passphrase) {
+  async importAccountKeyPair(dirname, passphrase) {
     const [privateKeyData, publicKeyData] = await Promise.all([
       fs.promises.readFile(path.join(dirname, 'privateKey.pem'), 'utf8'),
       fs.promises.readFile(path.join(dirname, 'publicKey.pem'), 'utf8')
@@ -112,14 +142,12 @@ class Client {
     await this.initAccountJwks()
   }
 
-  async authz (authzUrl) {
-    const data = await this.sign(
-      {
-        kid: this.myAccountUrl,
-        nonce: this.replayNonce,
-        url: authzUrl
-      }
-    )
+  async authz(authzUrl) {
+    const data = await this.sign({
+      kid: this.myAccountUrl,
+      nonce: this.replayNonce,
+      url: authzUrl
+    })
 
     const res = await request(authzUrl, {
       method: 'POST',
@@ -137,8 +165,14 @@ class Client {
       throw new Error(`authz() Status Code: ${res.statusCode} Data: ${res.data}`)
     }
 
-    const { challenges, identifier, ...rest } = res.data
-    const challenge = challenges.find(({ type }) => type === 'http-01')
+    const {
+      challenges,
+      identifier,
+      ...rest
+    } = res.data
+    const challenge = challenges.find(({
+      type
+    }) => type === 'http-01')
 
     return {
       challenge,
@@ -147,12 +181,12 @@ class Client {
     }
   }
 
-  async completeChallenge (challenge, cb) {
+  async completeChallenge(challenge) {
     await this.readyChallenge(challenge)
-    await this.receiveServerRequest(challenge, cb)
+    await this.receiveServerRequest(challenge)
   }
 
-  async directory () {
+  async directory() {
     if (this.hasDirectory) return false
 
     const res = await request(this.directoryUrl)
@@ -169,7 +203,7 @@ class Client {
     return true
   }
 
-  async fetchCertificate (certificateUrl) {
+  async fetchCertificate(certificateUrl) {
     const data = await this.sign({
       kid: this.myAccountUrl,
       nonce: this.replayNonce,
@@ -196,10 +230,18 @@ class Client {
     return res.data
   }
 
-  async finalizeOrder (finalizeUrl, domain, email) {
-    const { privateKey } = await generateKeyPair(common.CERTIFICATE_KEY_ALGORITHM)
+  async finalizeOrder(finalizeUrl, domain, email) {
+    const {
+      privateKey
+    } = await generateKeyPair(common.CERTIFICATE_KEY_ALGORITHM)
     const clientKey = common.exportPrivateKey(privateKey)
-    let { csr } = await createCsr({ clientKey, commonName: domain, email })
+    let {
+      csr
+    } = await createCsr({
+      clientKey,
+      commonName: domain,
+      email
+    })
 
     // "The CSR is sent in the base64url-encoded version of the DER format.
     // (Note: Because this field uses base64url, and does not include headers,
@@ -213,16 +255,13 @@ class Client {
       .replace(/\//g, '_')
       .replace(/=/g, '')
 
-    const data = await this.sign(
-      {
-        kid: this.myAccountUrl,
-        nonce: this.replayNonce,
-        url: finalizeUrl
-      },
-      {
-        csr
-      }
-    )
+    const data = await this.sign({
+      kid: this.myAccountUrl,
+      nonce: this.replayNonce,
+      url: finalizeUrl
+    }, {
+      csr
+    })
 
     const res = await request(finalizeUrl, {
       method: 'POST',
@@ -242,10 +281,13 @@ class Client {
 
     const certificate = await this.fetchCertificate(res.data.certificate)
 
-    return { certificate, privateKeyData: clientKey }
+    return {
+      certificate,
+      privateKeyData: clientKey
+    }
   }
 
-  async initAccountJwks () {
+  async initAccountJwks() {
     const [publicJwk, accountPrivateJwk] = await Promise.all([
       fromKeyLike(this.accountPublicKey),
       fromKeyLike(this.accountPrivateKey)
@@ -256,18 +298,15 @@ class Client {
     this.thumbprint = await calculateThumbprint(publicJwk)
   }
 
-  async newAccount (...emails) {
-    const data = await this.sign(
-      {
-        jwk: this.accountPublicJwk,
-        nonce: this.replayNonce,
-        url: this.newAccountUrl
-      },
-      {
-        contact: emails.map(email => 'mailto:' + email),
-        termsOfServiceAgreed: true
-      }
-    )
+  async newAccount(...emails) {
+    const data = await this.sign({
+      jwk: this.accountPublicJwk,
+      nonce: this.replayNonce,
+      url: this.newAccountUrl
+    }, {
+      contact: emails.map(email => 'mailto:' + email),
+      termsOfServiceAgreed: true
+    })
 
     const res = await request(this.newAccountUrl, {
       method: 'POST',
@@ -290,10 +329,12 @@ class Client {
     return res.statusCode === 201
   }
 
-  async newNonce () {
+  async newNonce() {
     if (this.replayNonce) return false
 
-    const res = await request(this.newNonceUrl, { method: 'HEAD' })
+    const res = await request(this.newNonceUrl, {
+      method: 'HEAD'
+    })
 
     if (res.statusCode !== 200) {
       throw new Error(`newNonce() Status Code: ${res.statusCode} Data: ${res.data}`)
@@ -304,19 +345,19 @@ class Client {
     return true
   }
 
-  async newOrder (...domains) {
-    const identifiers = domains.map(domain => ({ type: 'dns', value: domain }))
+  async newOrder(...domains) {
+    const identifiers = domains.map(domain => ({
+      type: 'dns',
+      value: domain
+    }))
 
-    const data = await this.sign(
-      {
-        kid: this.myAccountUrl,
-        nonce: this.replayNonce,
-        url: this.newOrderUrl
-      },
-      {
-        identifiers
-      }
-    )
+    const data = await this.sign({
+      kid: this.myAccountUrl,
+      nonce: this.replayNonce,
+      url: this.newOrderUrl
+    }, {
+      identifiers
+    })
 
     const res = await request(this.newOrderUrl, {
       method: 'POST',
@@ -335,7 +376,10 @@ class Client {
     }
 
     const orderUrl = res.headers.location
-    const { authorizations: authzUrls, finalize: finalizeUrl } = res.data
+    const {
+      authorizations: authzUrls,
+      finalize: finalizeUrl
+    } = res.data
 
     return {
       authzUrls,
@@ -345,7 +389,7 @@ class Client {
     }
   }
 
-  async pollAuthz (authzUrl) {
+  async pollAuthz(authzUrl) {
     for (let i = 0; i < 10; i++) {
       const result = await this.authz(authzUrl)
 
@@ -364,15 +408,12 @@ class Client {
     throw new Error('pollAuthz() timed out')
   }
 
-  async readyChallenge (challenge) {
-    const data = await this.sign(
-      {
-        kid: this.myAccountUrl,
-        nonce: this.replayNonce,
-        url: challenge.url
-      },
-      {}
-    )
+  async readyChallenge(challenge) {
+    const data = await this.sign({
+      kid: this.myAccountUrl,
+      nonce: this.replayNonce,
+      url: challenge.url
+    }, {})
 
     const res = await request(challenge.url, {
       method: 'POST',
@@ -391,21 +432,25 @@ class Client {
     }
   }
 
-  receiveServerRequest (challenge, cb) {
+  receiveServerRequest(challenge) {
     return new Promise((resolve, reject) => {
       const time = setTimeout(() => {
         reject(new Error('Timed out waiting for server request'))
       }, 10e3);
-      this.challengeCallbacks[challenge.token] = function () {
-        setTimeout(cb, 100);
+      let hasResolved = false;
+      this.challengeCallbacks = function () {
+        if (!hasResolved)
+          setTimeout(resolve, 100);
+        else
+          return challenge.token + '.' + this.thumbprint;
+        hasResolved = true;
         clearTimeout(time);
-        resolve();
         return challenge.token + '.' + this.thumbprint;
       }
     });
   }
 
-  setReplayNonce (res) {
+  setReplayNonce(res) {
     const replayNonce = (res.headers['replay-nonce'] || '').trim()
 
     if (!replayNonce) {
@@ -415,18 +460,24 @@ class Client {
     this.replayNonce = replayNonce
   }
 
-  async sign (header, payload) {
+  async sign(header, payload) {
     let data
 
     if (payload) {
       data = await new SignJWT(payload)
-        .setProtectedHeader({ alg: common.ACCOUNT_KEY_ALGORITHM, ...header })
+        .setProtectedHeader({
+          alg: common.ACCOUNT_KEY_ALGORITHM,
+          ...header
+        })
         .sign(this.accountPrivateKey)
     } else {
       // SignJWT constructor only accepts object but RFC8555 requires empty payload
       // Workaround: manually pass empty Uint8Array to CompactSign constructor
       const sig = new CompactSign(new Uint8Array())
-      sig.setProtectedHeader({ alg: common.ACCOUNT_KEY_ALGORITHM, ...header })
+      sig.setProtectedHeader({
+        alg: common.ACCOUNT_KEY_ALGORITHM,
+        ...header
+      })
       data = await sig.sign(this.accountPrivateKey)
     }
 

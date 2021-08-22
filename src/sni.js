@@ -7,6 +7,7 @@ const {
     ensureDir,
     findTxtRecord
 } = require('./util');
+const { default: AwaitLock } = require('await-lock');
 const record_email_prefix = 'forward-domain-cert-maintainer=';
 const client = new certnode.Client();
 const certsDir = path.join(__dirname, '.certs');
@@ -37,7 +38,7 @@ async function buildCache(host) {
         await fs.promises.access(extP, fs.constants.R_OK | fs.constants.W_OK);
         const expire = parseInt((await fs.promises.readFile(extP)).toString('utf8'));
         if (Date.now() > expire)
-            throw null; // expired
+            throw new Error('expired'); // expired
         const cert = await fs.promises.readFile(certP, 'utf8');
         const key = await fs.promises.readFile(keyP, 'utf8')
         return {
@@ -76,13 +77,18 @@ async function getKeyCert(servername) {
     }
 }
 
+let lock = new AwaitLock();
 
 const SniListener = async (servername, ctx) => {
     // Generate fresh account keys for Let's Encrypt
+    await lock.acquireAsync();
     try {
         ctx(null, tls.createSecureContext(await getKeyCert(servername)));
     } catch (error) {
+        console.log(JSON.stringify(error));
         ctx(error, null);
+    } finally {
+        lock.release();
     }
 }
 
