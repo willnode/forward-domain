@@ -19,6 +19,9 @@ async function buildCache(host) {
         for (const head of resolve.data.Answer) {
             let url = head.data.slice(record_prefix.length);
             let expand = false;
+            if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
+                throw new Error(url + ' in TXT record is not an absolute URL');
+            }
             if (url.endsWith('*')) {
                 url = url.substr(0, -1);
                 expand = true;
