@@ -1,8 +1,7 @@
 // development endpoint (use ngrok)
 
 const http = require('http');
-const argv = require('minimist')(process.argv.slice(2));
-const port = parseInt(argv.port || 3000);
+const port = (process.argv.length >= 2 ? parseInt(process.argv[2]) : 0) || 3000;
 const record_prefix = 'forward-domain=';
 
 const {

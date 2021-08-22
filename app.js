@@ -1,8 +1,6 @@
 // production endpoint (use pm2/phusion/whatever)
 
-const argv = require('minimist')(process.argv.slice(2));
 const app = require("./index.js");
-
 const https = require('https');
 const tls = require('tls');
 const certnode = require('certnode')
@@ -110,22 +108,11 @@ const main = async () => {
             }
         }
     }, app.listeners[0]);
-
+    httpsServer.listen(443);
+    app.listen(80);
 };
 
-
-// if (!argv.maintainerEmail)
-//     throw new Error('--maintainerEmail is required');
-
-// require("greenlock-express")
-//     .init({
-//         packageRoot: __dirname,
-//         configDir: "./greenlock.d",
-//         // contact for security and critical bug notices
-//         maintainerEmail: argv.maintainerEmail,
-//         // whether or not to run at cloudscale
-//         cluster: false
-//     })
-//     // Serves on 80 and 443
-//     // Get's SSL certificates magically!
-//     .serve(app);
+main().catch((err) => {
+    console.log(err);
+    process.exit(1);
+});
