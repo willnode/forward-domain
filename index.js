@@ -25,7 +25,7 @@ async function buildCache(host) {
                 throw new Error(url + ' in TXT record is not an absolute URL');
             }
             if (url.endsWith('*')) {
-                url = url.substr(0, -1);
+                url = url.slice(0, -1);
                 expand = true;
             }
             return {
