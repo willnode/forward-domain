@@ -1,9 +1,8 @@
 const record_prefix = 'forward-domain=';
-
-const {
-    default: axios
-} = require('axios');
 const path = require('path');
+const {
+    client
+} = require('./sni');
 const {
     findTxtRecord
 } = require('./util');
@@ -30,8 +29,20 @@ async function buildCache(host) {
     };
 }
 
-const listener = async function (req, res) {
+const acme_prefix = '/.well-known/acme-challenge/';
+
+const listener = async function (/** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
     try {
+        if (req.url.startsWith(acme_prefix)) {
+            const token = req.url.slice(acme_prefix.length);
+            if (client.challengeCallbacks[token]) {
+                res.write(client.challengeCallbacks[token]());
+            } else {
+                res.writeHead(404)
+            }
+            return;
+        }
+
         let cache = resolveCache[req.headers.host];
         if (!cache || (Date.now() > cache.expire)) {
             cache = await buildCache(req.headers.host);

@@ -27,13 +27,13 @@ class Client {
     this.accountPublicJwk = null
     this.accountPublicKey = null
     this.directoryUrl = directoryUrl
+    this.challengeCallbacks = {}
     this.hasDirectory = false
     this.myAccountUrl = ''
     this.newAccountUrl = ''
     this.newNonceUrl = ''
     this.newOrderUrl = ''
     this.replayNonce = ''
-    this.server = null
     this.thumbprint = ''
   }
 
@@ -88,8 +88,6 @@ class Client {
     await this.completeChallenge(challenge)
     await this.pollAuthz(authzUrls[0])
     const { certificate, privateKeyData } = await this.finalizeOrder(finalizeUrl, domain, email)
-
-    this.server?.close()
 
     return { certificate, privateKeyData }
   }
@@ -394,41 +392,17 @@ class Client {
   }
 
   receiveServerRequest (challenge, cb) {
-    this.server?.close()
-    this.server = http.createServer()
-
     return new Promise((resolve, reject) => {
-      this.server
-        .once('error', reject)
-        .on('request', (req, res) => {
-          if (req.method !== 'GET') {
-            res.writeHead(405)
-            res.writeHead(http.STATUS_CODES[405])
-            return
-          }
-
-          if (req.url !== '/.well-known/acme-challenge/' + challenge.token) {
-            res.writeHead(404)
-            res.end(http.STATUS_CODES[404])
-            return
-          }
-
-          res.writeHead(200, {
-            'content-type': 'application/octet-stream'
-          })
-
-          res.end(challenge.token + '.' + this.thumbprint)
-          resolve()
-        })
-
-      this.server.listen(80, '0.0.0.0')
-
-      setTimeout(() => {
+      const time = setTimeout(() => {
         reject(new Error('Timed out waiting for server request'))
-      }, 10e3)
-
-      cb && cb()
-    })
+      }, 10e3);
+      this.challengeCallbacks[challenge.token] = function () {
+        setTimeout(cb, 100);
+        clearTimeout(time);
+        resolve();
+        return challenge.token + '.' + this.thumbprint;
+      }
+    });
   }
 
   setReplayNonce (res) {
