@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
-    "certnode": "^0.0.1"
+    "jose-node-cjs-runtime": "^3.12.2",
+    "pem": "^1.14.4"
   }
 }
