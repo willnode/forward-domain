@@ -1,4 +1,4 @@
-# Forward Domain (Beta)
+# Forward Domain (Defunct, see [#1](https://github.com/willnode/forward-domain/issues/1))
 
 This services forwards domains using 301 HTTP redirects.
 
