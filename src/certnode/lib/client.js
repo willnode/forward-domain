@@ -40,7 +40,7 @@ class Client {
     /** @type {import('crypto').KeyObject} */
     this.accountPublicKey = null
     this.directoryUrl = directoryUrl
-    this.challengeCallbacks = {}
+    this.challengeCallbacks = null
     this.hasDirectory = false
     this.myAccountUrl = ''
     this.newAccountUrl = ''
@@ -236,7 +236,7 @@ class Client {
     const clientKey = common.exportPrivateKey(privateKey)
     let {
       csr
-    // @ts-ignore
+      // @ts-ignore
     } = await createCsr({
       clientKey,
       commonName: domain,
@@ -438,13 +438,14 @@ class Client {
         reject(new Error('Timed out waiting for server request'))
       }, 10e3);
       let hasResolved = false;
-      this.challengeCallbacks[domain] = function () {
+      this.challengeCallbacks = () => {
         if (!hasResolved)
           setTimeout(resolve, 100);
         else
           return challenge.token + '.' + this.thumbprint;
         hasResolved = true;
         clearTimeout(time);
+        this.challengeCallbacks = null;
         return challenge.token + '.' + this.thumbprint;
       }
     });
