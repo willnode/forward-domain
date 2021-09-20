@@ -23,9 +23,9 @@ const PUBLIC_KEY_TYPE = 'spki'
  * @param  {crypto.KeyObject} privateKey
  * @param  {String}           [passphrase]
  *
- * @return {String}
  */
 const exportPrivateKey = (privateKey, passphrase) => {
+  /** @type {crypto.KeyExportOptions<'pem'>} */
   const privateKeyOpts = {
     type: PRIVATE_KEY_TYPE,
     format: PRIVATE_KEY_FORMAT
@@ -41,10 +41,9 @@ const exportPrivateKey = (privateKey, passphrase) => {
 
 /**
  * @param  {crypto.KeyObject} publicKey
- *
- * @return {String}
  */
 const exportPublicKey = publicKey => {
+  /** @type {crypto.KeyExportOptions<'pem'>} */
   return publicKey.export({
     type: PUBLIC_KEY_TYPE,
     format: PUBLIC_KEY_FORMAT
@@ -55,9 +54,10 @@ const exportPublicKey = publicKey => {
  * @param  {String} privateKeyData
  * @param  {String} [passphrase]
  *
- * @return {String}
+ * @return {crypto.KeyObject}
  */
 const importPrivateKey = (privateKeyData, passphrase) => {
+  /** @type {crypto.KeyExportOptions<'pem'>} */
   const privateKeyOpts = {
     key: privateKeyData,
     format: PRIVATE_KEY_FORMAT,
@@ -93,8 +93,8 @@ const importPublicKey = publicKeyData => {
 }
 
 /**
- * @param  {String}                    dirname
- * @param  {(crypto.KeyObject|String)} key
+ * @param  {String}                    filename
+ * @param  {crypto.KeyObject|string} key
  * @param  {String}                    [passphrase]
  *
  * @return {Promise}

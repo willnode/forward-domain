@@ -1,6 +1,6 @@
 const https = require('https')
 
-const request = (url, { data = '', ...options } = {}, cb) => {
+const request = (/** @type {string | import("url").URL} */ url, /** @type {https.RequestOptions&{data?: string}} */ { data = '', ...options } = {}, /** @type {() => any} */ cb) => {
   return new Promise((resolve, reject) => {
     try {
       url = new URL(url)
