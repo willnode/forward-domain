@@ -22,10 +22,16 @@ function getCertCachePath(host) {
     return path.join(certsDir, hash.substr(0, 2), hash.substr(2), host);
 }
 
+/**
+ * @param {string} host
+ */
 async function findMaintainerEmail(host) {
     return await findTxtRecord(host, record_email_prefix);
 }
 
+/**
+ * @param {string} host
+ */
 async function buildCache(host) {
     const dir = getCertCachePath(host);
     const keyP = path.join(dir, 'privateKey.pem');
@@ -64,6 +70,9 @@ async function buildCache(host) {
 
 }
 
+/**
+ * @param {string} servername
+ */
 async function getKeyCert(servername) {
     let cache = resolveCache[servername];
     await ensureDir(certsDir);

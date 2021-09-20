@@ -17,8 +17,12 @@ async function ensureDir(dir) {
     }
 }
 
+/**
+ * @param {string} host
+ * @param {string} prefix
+ */
 async function findTxtRecord(host, prefix, required = true) {
-    const resolve = await axios(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=TXT`);
+    const resolve = await axios(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
             if (!head.data.startsWith(prefix))

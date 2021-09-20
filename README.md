@@ -26,9 +26,9 @@ How it is possible?
 To forward from `www.old.com` to `old.com`, add these records to your DNS:
 
 ```
-www.old.com   IN    CNAME   r.forwarddomain.net
-www.old.com   IN    TXT     forward-domain=https://old.com/*
-www.old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
+www.old.com     IN    CNAME   r.forwarddomain.net
+_.www.old.com   IN    TXT     forward-domain=https://old.com/*
+_.www.old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
 ```
 
 > IMPORTANT: replace `<your email address>` with your email address!
@@ -37,13 +37,12 @@ Because CNAME can't be used in apex domains, you can use A/AAAA records.<br>
 To forward from `old.com` to `new.net`, add these records to your DNS:
 
 ```
-old.com   IN    A       206.189.61.89
-old.com   IN    AAAA    2a03:b0c0:3:d0::13a8:c001
-old.com   IN    TXT     forward-domain=https://new.net/*
-old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
+old.com     IN    A       167.172.5.31
+_.old.com   IN    TXT     forward-domain=https://new.net/*
+_.old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
 ```
 
-> BETA service notice: IP addresses can change anytime (with notice).
+> BETA service notice: IP addresses may change anytime.
 
 ## FAQ
 
