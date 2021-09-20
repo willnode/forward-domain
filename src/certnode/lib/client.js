@@ -34,11 +34,13 @@ class Client {
    */
   constructor(directoryUrl = common.DIRECTORY_URL) {
     this.accountPrivateJwk = null
+    /** @type {import('crypto').KeyObject} */
     this.accountPrivateKey = null
     this.accountPublicJwk = null
+    /** @type {import('crypto').KeyObject} */
     this.accountPublicKey = null
     this.directoryUrl = directoryUrl
-    this.challengeCallbacks = null
+    this.challengeCallbacks = {}
     this.hasDirectory = false
     this.myAccountUrl = ''
     this.newAccountUrl = ''
@@ -77,7 +79,9 @@ class Client {
       publicKey
     } = await generateKeyPair(common.ACCOUNT_KEY_ALGORITHM)
 
+    // @ts-ignore
     this.accountPrivateKey = privateKey
+    // @ts-ignore
     this.accountPublicKey = publicKey
 
     await this.initAccountJwks()
@@ -104,7 +108,7 @@ class Client {
       challenge
     } = await this.authz(authzUrls[0])
 
-    await this.completeChallenge(challenge)
+    await this.completeChallenge(challenge, domain)
     await this.pollAuthz(authzUrls[0])
     const {
       certificate,
@@ -146,7 +150,6 @@ class Client {
 
     const res = await request(authzUrl, {
       method: 'POST',
-
       headers: {
         'content-type': 'application/jose+json'
       },
@@ -176,9 +179,9 @@ class Client {
     }
   }
 
-  async completeChallenge(challenge) {
+  async completeChallenge(challenge, domain) {
     await this.readyChallenge(challenge)
-    await this.receiveServerRequest(challenge)
+    await this.receiveServerRequest(challenge, domain)
   }
 
   async directory() {
@@ -229,9 +232,11 @@ class Client {
     const {
       privateKey
     } = await generateKeyPair(common.CERTIFICATE_KEY_ALGORITHM)
+    // @ts-ignore
     const clientKey = common.exportPrivateKey(privateKey)
     let {
       csr
+    // @ts-ignore
     } = await createCsr({
       clientKey,
       commonName: domain,
@@ -427,13 +432,13 @@ class Client {
     }
   }
 
-  receiveServerRequest(challenge) {
+  receiveServerRequest(challenge, domain) {
     return new Promise((resolve, reject) => {
       const time = setTimeout(() => {
         reject(new Error('Timed out waiting for server request'))
       }, 10e3);
       let hasResolved = false;
-      this.challengeCallbacks = function () {
+      this.challengeCallbacks[domain] = function () {
         if (!hasResolved)
           setTimeout(resolve, 100);
         else
