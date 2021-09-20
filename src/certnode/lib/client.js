@@ -445,7 +445,8 @@ class Client {
           return challenge.token + '.' + this.thumbprint;
         hasResolved = true;
         clearTimeout(time);
-        this.challengeCallbacks = null;
+        // wanted to clear callbacks here but LE does the call multiple times.
+        // remember we're in mutex lock so no worries for racing.
         return challenge.token + '.' + this.thumbprint;
       }
     });

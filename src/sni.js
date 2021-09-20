@@ -89,6 +89,8 @@ async function getKeyCert(servername) {
 let lock = new AwaitLock();
 
 const SniListener = async (servername, ctx) => {
+    // Had to use lock because the best authenticator
+    // library seems don't yet fully stateless.
     // Generate fresh account keys for Let's Encrypt
     await lock.acquireAsync();
     try {
