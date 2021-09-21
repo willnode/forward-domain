@@ -28,10 +28,7 @@ To forward from `www.old.com` to `old.com`, add these records to your DNS:
 ```
 www.old.com     IN    CNAME   r.forwarddomain.net
 _.www.old.com   IN    TXT     forward-domain=https://old.com/*
-_.www.old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
 ```
-
-> IMPORTANT: replace `<your email address>` with your email address!
 
 Because CNAME can't be used in apex domains, you can use A/AAAA records.<br>
 To forward from `old.com` to `new.net`, add these records to your DNS:
@@ -39,17 +36,11 @@ To forward from `old.com` to `new.net`, add these records to your DNS:
 ```
 old.com     IN    A       167.172.5.31
 _.old.com   IN    TXT     forward-domain=https://new.net/*
-_.old.com   IN    TXT     forward-domain-cert-maintainer=<your email address>
 ```
 
 > BETA service notice: IP addresses may change anytime.
 
 ## FAQ
-
-### Why email address?
-
-This is required in order to sign HTTPS certificates.<br>
-You can omit it but HTTPS redirects will not work.
 
 ### Is it really free?
 

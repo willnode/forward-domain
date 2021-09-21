@@ -7,10 +7,12 @@ const {
     ensureDir,
     findTxtRecord
 } = require('./util');
-const { default: AwaitLock } = require('await-lock');
-const record_email_prefix = 'forward-domain-cert-maintainer=';
-const client = new certnode.Client();
+const {
+    default: AwaitLock
+} = require('await-lock');
 const certsDir = path.join(__dirname, '../.certs');
+const accountDir = path.join(__dirname, '../.certs/account');
+const client = new certnode.Client();
 
 /**
  * @type {Object<string, {cert: any, key: any, expire: number}>}
@@ -20,13 +22,6 @@ const resolveCache = {};
 function getCertCachePath(host) {
     const hash = md5(host);
     return path.join(certsDir, hash.substr(0, 2), hash.substr(2), host);
-}
-
-/**
- * @param {string} host
- */
-async function findMaintainerEmail(host) {
-    return await findTxtRecord(host, record_email_prefix);
 }
 
 /**
@@ -56,7 +51,7 @@ async function buildCache(host) {
         const {
             certificate,
             privateKeyData
-        } = await client.generateCertificate(host, await findMaintainerEmail(host));
+        } = await client.generateCertificate(host);
         await fs.promises.writeFile(certP, certificate);
         await certnode.writeKeyToFile(keyP, privateKeyData, '');
         const expire = (Date.now() + 45 * 86400 * 1000);
@@ -88,7 +83,11 @@ async function getKeyCert(servername) {
 
 let lock = new AwaitLock();
 
-const SniListener = async (servername, ctx) => {
+/**
+ * @param {string} servername
+ * @param {(err: any, cb: tls.SecureContext) => void} ctx
+ */
+async function SniListener(servername, ctx) {
     // Had to use lock because the best authenticator
     // library seems don't yet fully stateless.
     // Generate fresh account keys for Let's Encrypt
@@ -104,8 +103,16 @@ const SniListener = async (servername, ctx) => {
 }
 
 const SniPrepare = async () => {
-    await client.generateAccountKeyPair()
     await ensureDir(certsDir);
+    await ensureDir(accountDir);
+
+    if (fs.existsSync(path.join(accountDir, 'privateKey.pem')) &&
+        fs.existsSync(path.join(accountDir, 'publicKey.pem'))) {
+        await client.importAccountKeyPair(accountDir, '');
+    } else {
+        await client.generateAccountKeyPair();
+        await client.exportAccountKeyPair(accountDir, '');
+    }
 }
 
 module.exports = {

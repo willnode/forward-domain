@@ -91,14 +91,14 @@ class Client {
    * Generate a certificate from Let's Encrypt for your domain.
    *
    * @param  {String} domain - the domain you want a certificate for
-   * @param  {String} email  - the email used to register the certificate
    *
    * @return {Promise}
    */
-  async generateCertificate(domain, email) {
+  async generateCertificate(domain) {
     await this.directory()
     await this.newNonce()
-    await this.newAccount(email)
+    if (!this.myAccountUrl)
+      await this.newAccount()
 
     const {
       authzUrls,
@@ -113,7 +113,7 @@ class Client {
     const {
       certificate,
       privateKeyData
-    } = await this.finalizeOrder(finalizeUrl, domain, email)
+    } = await this.finalizeOrder(finalizeUrl, domain)
 
     return {
       certificate,
@@ -228,7 +228,7 @@ class Client {
     return res.data
   }
 
-  async finalizeOrder(finalizeUrl, domain, email) {
+  async finalizeOrder(finalizeUrl, domain) {
     const {
       privateKey
     } = await generateKeyPair(common.CERTIFICATE_KEY_ALGORITHM)
@@ -240,7 +240,6 @@ class Client {
     } = await createCsr({
       clientKey,
       commonName: domain,
-      email
     })
 
     // "The CSR is sent in the base64url-encoded version of the DER format.
@@ -304,7 +303,6 @@ class Client {
       nonce: this.replayNonce,
       url: this.newAccountUrl
     }, {
-      contact: emails.map(email => 'mailto:' + email),
       termsOfServiceAgreed: true
     })
 
