@@ -1,8 +1,10 @@
 # Forward Domain
 
+<img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/7lp67jpzvabtf8opyzaf.png" alt="Banner" width="600">
+
 > We're back with improvements! See [CHANGES.md](CHANGES.md)
 
-This services forwards domains using 301 HTTP redirects.
+This services forwards domains using 301 HTTP(s) redirects.
 
 Possible scenarios:
 
