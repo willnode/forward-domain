@@ -1,4 +1,6 @@
-# Forward Domain (Defunct, see [#1](https://github.com/willnode/forward-domain/issues/1))
+# Forward Domain
+
+> We're back with improvements! See [CHANGES.md](CHANGES.md)
 
 This services forwards domains using 301 HTTP redirects.
 
@@ -37,8 +39,6 @@ To forward from `old.com` to `new.net`, add these records to your DNS:
 old.com     IN    A       167.172.5.31
 _.old.com   IN    TXT     forward-domain=https://new.net/*
 ```
-
-> BETA service notice: IP addresses may change anytime.
 
 ## FAQ
 
