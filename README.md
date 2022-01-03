@@ -47,7 +47,7 @@ _.old.com   IN    TXT     forward-domain=https://new.net/*
 ### Is it really free?
 
 Forwarding domains should be easy to setup.<br>
-I use this internally for [domcloud.io](https://domcloud.io).<br>
+I use this myself for [domcloud.io](https://domcloud.io).<br>
 
 ### How can I check redirects will work?
 
@@ -58,6 +58,14 @@ For right now there's no way to flush the cache sorry.
 ### Why it loads slowly?
 
 It only slow at first time because it has to sign HTTPS certificates.
+
+## How about IPv6?
+
+IPv6 record is added in `r.forwarddomain.net` so subdomain redirects will simply work with IPv6. We don't guarantee that its IPv6 address will be persistent though. See [#2](https://github.com/willnode/forward-domain/issues/2#issuecomment-1003831835) for apex domains setup.
+
+## What records do we keep?
+
+We only keep caches of DNS records and SSL certs. This also means we can see how much users and what domains are using our service from the software cache, but that's all. We don't keeping log traffic nor keeping any user data anywhere in our server.
 
 ### How can I support this service?
 
