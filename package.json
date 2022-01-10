@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "pm2 start app.js",
-    "start-proxied": "pm2 start app.js -- 5080 5443"
+    "start-proxied": "pm2 start app.js -- 5080 5443",
+    "count": "find .certs -type d | grep '.\\.'  | wc -l"
   },
   "keywords": [],
   "author": "",
