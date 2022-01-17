@@ -76,7 +76,7 @@ We only keep caches of DNS records and SSL certs. This also means we can see how
 
 Star our repo and spread the word, please :)
 
-Additionally, you can also help us [cover hosting costs](https://www.buymeacoffee.com/willnode).
+Additionally, you can also help us [cover hosting costs](https://ko-fi.com/willnode).
 
 ## Usual Disclaimer
 
