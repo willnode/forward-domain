@@ -1,5 +1,8 @@
 # Forward Domain
 
+[![GitHub Repo stars](https://img.shields.io/github/stars/willnode/forward-domain?style=for-the-badge)](https://github.com/willnode/forward-domain/stargazers)
+![Uptime Robot ratio (30 days)](https://img.shields.io/uptimerobot/ratio/m790428156-91b88afc46cfb86ead3dc56e?style=for-the-badge)
+
 <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/7lp67jpzvabtf8opyzaf.png" alt="Banner" width="600">
 
 > We're back with improvements! See [CHANGES.md](CHANGES.md)
