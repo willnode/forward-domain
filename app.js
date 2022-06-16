@@ -1,11 +1,12 @@
 // production endpoint (use pm2/phusion/whatever)
 
+require('dotenv').config()
 const https = require("https");
 const app = require("./index.js");
 const listener = require("./src/client.js");
 const { SniPrepare, SniListener } = require("./src/sni.js");
-const port80 = (process.argv.length >= 2 ? parseInt(process.argv[2]) : 0) || 80;
-const port443 = (process.argv.length >= 3 ? parseInt(process.argv[3]) : 0) || 443;
+const port80 = parseInt(process.env.HTTP_PORT || "80");
+const port443 = parseInt(process.env.HTTPS_PORT || "443");
 
 const main = async () => {
     await SniPrepare();

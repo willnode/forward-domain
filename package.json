@@ -15,6 +15,7 @@
   "dependencies": {
     "await-lock": "^2.1.0",
     "axios": "^0.21.1",
+    "dotenv": "^16.0.1",
     "jose-node-cjs-runtime": "^3.12.2",
     "pem": "^1.14.4"
   },

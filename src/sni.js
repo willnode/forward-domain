@@ -5,7 +5,6 @@ const path = require('path');
 const {
     md5,
     ensureDir,
-    findTxtRecord
 } = require('./util');
 const {
     default: AwaitLock

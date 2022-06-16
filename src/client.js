@@ -1,10 +1,10 @@
 const record_prefix = 'forward-domain=';
-const path = require('path');
 const {
     client
 } = require('./sni');
 const {
-    findTxtRecord
+    findTxtRecord,
+    isHostBlacklisted
 } = require('./util');
 const combineURLs = require('axios/lib/helpers/combineURLs');
 
@@ -26,13 +26,14 @@ async function buildCache(host) {
     return {
         url,
         expand,
+        blacklisted: isHostBlacklisted(host),
         expire: Date.now() + 86400 * 1000,
     };
 }
 
 const acme_prefix = '/.well-known/acme-challenge/';
 
-const listener = async function (/** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
+const listener = async function ( /** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
     try {
         if (req.url.startsWith(acme_prefix)) {
             if (client.challengeCallbacks) {
@@ -51,6 +52,12 @@ const listener = async function (/** @type {import('http').IncomingMessage} */ r
         if (!cache || (Date.now() > cache.expire)) {
             cache = await buildCache(req.headers.host);
             resolveCache[req.headers.host] = cache;
+        }
+        if (cache.blacklisted) {
+            res.writeHead(301, {
+                'Location': process.env.BLACKLIST_REDIRECT || 'https://forwarddomain.net/blacklisted',
+            });
+            return;
         }
         res.writeHead(301, {
             'Location': cache.expand ? combineURLs(cache.url, req.url) : cache.url,

@@ -1,11 +1,26 @@
-const { default: axios } = require('axios');
+const {
+    default: axios
+} = require('axios');
 var crypto = require('crypto');
 const fs = require('fs');
+const blacklistURL = (process.env.BLACKLIST_HOSTS || "").split(',').reduce((acc, host) => {
+    acc[host] = true;
+    return acc;
+}, {});
 
 function md5(str) {
     return crypto.createHash('md5').update(str).digest('hex');
 }
 
+function isHostBlacklisted(domain = '') {
+    if (domain.length > 6) {
+        let p = domain.lastIndexOf('.', domain.length - 6);
+        if (p > 0) {
+            domain = domain.substring(p + 1);
+        }
+    }
+    return blacklistURL[domain];
+}
 
 async function ensureDir(dir) {
     try {
@@ -40,4 +55,5 @@ module.exports = {
     md5,
     ensureDir,
     findTxtRecord,
+    isHostBlacklisted,
 }
