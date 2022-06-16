@@ -55,7 +55,7 @@ const listener = async function ( /** @type {import('http').IncomingMessage} */ 
         }
         if (cache.blacklisted) {
             res.writeHead(301, {
-                'Location': process.env.BLACKLIST_REDIRECT || 'https://forwarddomain.net/blacklisted',
+                'Location': (process.env.BLACKLIST_REDIRECT || 'https://forwarddomain.net/blacklisted') + "?d=" + req.headers.host,
             });
             return;
         }
