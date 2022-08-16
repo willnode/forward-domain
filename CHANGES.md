@@ -1,5 +1,9 @@
 # CHANGES
 
+## v2.3 (2022-08-16)
+
++ Add stat API `s.forwarddomain.net`, separate node script.
+
 ## v2.2 (2022-06-16)
 
 + Moving all parameters to `.env` file

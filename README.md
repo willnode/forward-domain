@@ -79,7 +79,11 @@ We only keep caches of DNS records and SSL certs. This also means we can see how
 
 Star our repo and spread the word, please :)
 
-Additionally, you can also help us [cover hosting costs](https://ko-fi.com/willnode).
+Additionally, you can also help us [cover hosting costs](https://github.com/sponsors/willnode).
+
+## Credits
+
+Things in `package.json`. I also borrow code from [zbo14/certnode](https://github.com/zbo14/certnode).
 
 ## Usual Disclaimer
 
