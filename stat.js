@@ -20,6 +20,16 @@ let cacheStat = updateStat();
 
 const listener = async function ( /** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
     try {
+        // handle CORS
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        res.setHeader('Access-Control-Max-Age', '86400');
+        if (req.method === 'OPTIONS') {
+            res.statusCode = 204;
+            return;
+        }
+
         switch (req.url) {
             case '/':
                 if (cacheStat.exp < Date.now()) {
@@ -30,7 +40,7 @@ const listener = async function ( /** @type {import('http').IncomingMessage} */ 
                 break;
             default:
                 res.writeHead(404, {
-                    'content-type': 'application/json'
+                    'Content-Type': 'application/json'
                 });
                 res.write(JSON.stringify({
                     error: 'Unknown url'
