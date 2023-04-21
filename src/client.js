@@ -1,18 +1,21 @@
+import { client } from "./sni.js";
+import { findTxtRecord, isHostBlacklisted, combineURLs } from "./util.js";
 const record_prefix = 'forward-domain=';
-const {
-    client
-} = require('./sni');
-const {
-    findTxtRecord,
-    isHostBlacklisted
-} = require('./util');
-const combineURLs = require('axios/lib/helpers/combineURLs');
-
 /**
- * @type {Object<string, {expire: number, expand: boolean, url: string}>}
+ * @typedef {Object} Cache
+ * @property {string} url
+ * @property {boolean} expand
+ * @property {boolean} blacklisted
+ * @property {number} expire
+ */
+/**
+ * @type {Object<string, Cache>}
  */
 const resolveCache = {};
-
+/**
+ * @param {string} host
+ * @returns {Promise<Cache>}
+ */
 async function buildCache(host) {
     let expand = false;
     let url = await findTxtRecord(host, record_prefix);
@@ -30,28 +33,36 @@ async function buildCache(host) {
         expire: Date.now() + 86400 * 1000,
     };
 }
-
 const acme_prefix = '/.well-known/acme-challenge/';
-
-const listener = async function ( /** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
+/**
+ * @type {import('http').RequestListener}
+ */
+const listener = async function (req, res) {
     try {
-        if (req.url.startsWith(acme_prefix)) {
+        const url = req.url || '';
+        if (url.startsWith(acme_prefix)) {
             if (client.challengeCallbacks) {
                 res.writeHead(200, {
                     // This is important :)
                     'content-type': 'application/octet-stream'
                 });
                 res.write(client.challengeCallbacks());
-            } else {
-                res.writeHead(404)
+            }
+            else {
+                res.writeHead(404);
             }
             return;
         }
-
-        let cache = resolveCache[req.headers.host];
+        const host = (req.headers.host || '').toLowerCase();
+        if (!host) {
+            res.writeHead(400);
+            res.write('Host header is required');
+            return;
+        }
+        let cache = resolveCache[host];
         if (!cache || (Date.now() > cache.expire)) {
-            cache = await buildCache(req.headers.host);
-            resolveCache[req.headers.host] = cache;
+            cache = await buildCache(host);
+            resolveCache[host] = cache;
         }
         if (cache.blacklisted) {
             res.writeHead(301, {
@@ -60,15 +71,16 @@ const listener = async function ( /** @type {import('http').IncomingMessage} */ 
             return;
         }
         res.writeHead(301, {
-            'Location': cache.expand ? combineURLs(cache.url, req.url) : cache.url,
+            'Location': cache.expand ? combineURLs(cache.url, url) : cache.url,
         });
         return;
-    } catch (error) {
+    }
+    catch (error) {
         res.writeHead(400);
         res.write(error.message || 'Unknown error');
-    } finally {
+    }
+    finally {
         res.end();
     }
-}
-
-module.exports = listener;
+};
+export default listener;

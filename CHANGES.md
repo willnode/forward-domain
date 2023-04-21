@@ -1,5 +1,10 @@
 # CHANGES
 
+## v2.4 (2023-04-21)
+
++ Fix global service lock when a website is verificating certs.
++ Update code deps, refactor imports to ESM.
+
 ## v2.3 (2022-08-16)
 
 + Add stat API `s.forwarddomain.net`, separate node script.

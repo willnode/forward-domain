@@ -1,17 +1,17 @@
+import { config } from "dotenv";
+import http from "http";
+import listener from "./src/client.js";
+import { fileURLToPath } from "url";
+
 // development endpoint (use ngrok)
-
-require('dotenv').config()
-const http = require('http');
-const listener = require('./src/client');
-
-
 const server = http.createServer(listener);
-const port = parseInt(process.env.HTTP_PORT || "3000");
 
-if (require.main === module) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+    config();
+    const port = parseInt(process.env.HTTP_PORT || "3000");
     server.listen(port, function () {
         console.log(`server start at port ${port}`);
     });
-} else {
-    module.exports = server
 }
+
+export default server;

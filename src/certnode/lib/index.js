@@ -1,4 +1,3 @@
-module.exports = {
-  ...require('./common'),
-  Client: require('./client')
-}
+import Client from './client.js';
+export * from './common.js';
+export { Client };

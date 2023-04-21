@@ -1,18 +1,20 @@
-const {
-    default: axios
-} = require('axios');
-var crypto = require('crypto');
-const fs = require('fs');
+import { default as axios } from "axios";
+import crypto from "crypto";
+import fs from "fs";
+
 const blacklistURL = (process.env.BLACKLIST_HOSTS || "").split(',').reduce((acc, host) => {
     acc[host] = true;
     return acc;
 }, {});
 
-function md5(str) {
+/**
+ * @param {crypto.BinaryLike} str
+ */
+export function md5(str) {
     return crypto.createHash('md5').update(str).digest('hex');
 }
 
-function isHostBlacklisted(domain = '') {
+export function isHostBlacklisted(domain = '') {
     if (domain.length > 6) {
         let p = domain.lastIndexOf('.', domain.length - 6);
         if (p > 0) {
@@ -22,10 +24,14 @@ function isHostBlacklisted(domain = '') {
     return blacklistURL[domain];
 }
 
-async function ensureDir(dir) {
+/**
+ * @param {fs.PathLike} dir
+ */
+export async function ensureDir(dir) {
     try {
         await fs.promises.access(dir, fs.constants.W_OK | fs.constants.O_DIRECTORY);
-    } catch (error) {
+    }
+    catch (error) {
         await fs.promises.mkdir(dir, {
             recursive: true
         });
@@ -36,7 +42,7 @@ async function ensureDir(dir) {
  * @param {string} host
  * @param {string} prefix
  */
-async function findTxtRecord(host, prefix, required = true) {
+export async function findTxtRecord(host, prefix, required = true) {
     const resolve = await axios(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
@@ -51,9 +57,8 @@ async function findTxtRecord(host, prefix, required = true) {
     return null;
 }
 
-module.exports = {
-    md5,
-    ensureDir,
-    findTxtRecord,
-    isHostBlacklisted,
+export function combineURLs(baseURL, relativeURL) {
+    return relativeURL
+        ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
+        : baseURL;
 }
