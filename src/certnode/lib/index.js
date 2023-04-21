@@ -1,4 +1,5 @@
-module.exports = {
-  ...require('./common'),
-  Client: require('./client')
-}
+export const Client = require('./client');
+export default {
+    ...require('./common'),
+    Client
+};
