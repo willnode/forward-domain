@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import http from "http";
-import { fileURLToPath } from "url";
+import { isMainProcess } from "./src/util";
 
 const updateStat = function () {
     // run npm stat
@@ -58,7 +58,7 @@ const listener = async function (/** @type {import('http').IncomingMessage} */ r
 
 const server = http.createServer(listener);
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMainProcess(import.meta.url)) {
     config();
     const port = parseInt(process.env.STAT_PORT || "3000");
     server.listen(port, function () {

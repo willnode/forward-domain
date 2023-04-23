@@ -56,41 +56,33 @@ async function buildCache(host) {
         };
     }
     catch (error) {
-        const { certificate, privateKeyData } = await client.generateCertificate(host);
-        await fs.promises.writeFile(certP, certificate);
-        await writeKeyToFile(keyP, privateKeyData, '');
-        const expire = (Date.now() + 45 * 86400 * 1000);
-        await fs.promises.writeFile(extP, expire.toString());
-        return {
-            cert: certificate,
-            key: privateKeyData,
-            expire
-        };
+        // only one process can generate certificate at a time
+        return await lock.acquire('cert', async () => {
+            const { certificate, privateKeyData } = await client.generateCertificate(host);
+            await fs.promises.writeFile(certP, certificate);
+            await writeKeyToFile(keyP, privateKeyData, '');
+            const expire = (Date.now() + 45 * 86400 * 1000);
+            await fs.promises.writeFile(extP, expire.toString());
+            return {
+                cert: certificate,
+                key: privateKeyData,
+                expire
+            };
+        });
     }
 }
 /**
  * @param {string} servername
- * @param {AsyncLock} lock
  */
-async function getKeyCert(servername, lock) {
+async function getKeyCert(servername) {
     // Had to use lock because the best authenticator
     // library seems don't yet fully stateless.
     servername = servername.toLowerCase();
     let cache = resolveCache[servername];
     await ensureDir(certsDir);
     if (!cache || (Date.now() > cache.expire)) {
-        cache = await lock.acquire(servername, (cb) => {
-            if (!resolveCache[servername] || (Date.now() > resolveCache[servername].expire)) {
-                buildCache(servername).then((cache) => {
-                    resolveCache[servername] = cache;
-                    cb(null, cache);
-                }).catch((error) => {
-                    cb(error, undefined);
-                });
-            } else {
-                cb(null, resolveCache[servername]);
-            }
-        });
+        cache = await buildCache(servername);
+        resolveCache[servername] = cache;
     }
     return {
         key: cache.key,
@@ -104,7 +96,7 @@ async function getKeyCert(servername, lock) {
 async function SniListener(servername, ctx) {
     // Generate fresh account keys for Let's Encrypt
     try {
-        ctx(null, tls.createSecureContext(await getKeyCert(servername, lock)));
+        ctx(null, tls.createSecureContext(await getKeyCert(servername)));
     }
     catch (error) {
         console.log(error);

@@ -1,6 +1,7 @@
-import { default as axios } from "axios";
+import request from "./certnode/lib/request.js";
 import crypto from "crypto";
 import fs from "fs";
+import { fileURLToPath } from "url";
 
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
@@ -59,7 +60,7 @@ const parseTxtRecordData = (value) => {
  * @return {Promise<{url: string, httpStatus?: string} | null>}
  */
 export async function findTxtRecord(host) {
-    const resolve = await axios(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
+    const resolve = await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
             const txtData = parseTxtRecordData(head.data);
@@ -73,8 +74,19 @@ export async function findTxtRecord(host) {
     return null;
 }
 
+/**
+ * @param {string} baseURL
+ * @param {string} relativeURL
+ */
 export function combineURLs(baseURL, relativeURL) {
     return relativeURL
         ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
         : baseURL;
+}
+
+/**
+ * @param {string} metaURL
+ */
+export function isMainProcess(metaURL) {
+    return [process.argv[1], process.env.pm_exec_path].includes(fileURLToPath(metaURL));
 }

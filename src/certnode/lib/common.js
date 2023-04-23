@@ -1,24 +1,24 @@
 import crypto from "crypto";
 import fs from "fs";
-const ACCOUNT_KEY_ALGORITHM = 'ES256';
-const CERTIFICATE_KEY_ALGORITHM = 'RS256';
+export const ACCOUNT_KEY_ALGORITHM = 'ES256';
+export const CERTIFICATE_KEY_ALGORITHM = 'RS256';
 const env = (process.env.NODE_ENV || '').trim().toLowerCase();
-const DIRECTORY_URL = ['development', 'test'].includes(env)
+export const DIRECTORY_URL = ['development', 'test'].includes(env)
     ? 'https://acme-staging-v02.api.letsencrypt.org/directory'
     : 'https://acme-v02.api.letsencrypt.org/directory';
-const PRIVATE_KEY_CIPHER = 'aes-256-cbc';
-const PRIVATE_KEY_FORMAT = 'pem';
-const PRIVATE_KEY_PERMISSIONS = 0o600;
-const PRIVATE_KEY_TYPE = 'pkcs8';
-const PUBLIC_KEY_FORMAT = 'pem';
-const PUBLIC_KEY_PERMISSIONS = 0o666;
-const PUBLIC_KEY_TYPE = 'spki';
+export const PRIVATE_KEY_CIPHER = 'aes-256-cbc';
+export const PRIVATE_KEY_FORMAT = 'pem';
+export const PRIVATE_KEY_PERMISSIONS = 0o600;
+export const PRIVATE_KEY_TYPE = 'pkcs8';
+export const PUBLIC_KEY_FORMAT = 'pem';
+export const PUBLIC_KEY_PERMISSIONS = 0o666;
+export const PUBLIC_KEY_TYPE = 'spki';
 /**
  * @param  {crypto.KeyObject} privateKey
  * @param  {String}           [passphrase]
  *
  */
-const exportPrivateKey = (privateKey, passphrase) => {
+export const exportPrivateKey = (privateKey, passphrase) => {
     /** @type {crypto.KeyExportOptions<'pem'>} */
     const privateKeyOpts = {
         type: PRIVATE_KEY_TYPE,
@@ -33,7 +33,7 @@ const exportPrivateKey = (privateKey, passphrase) => {
 /**
  * @param  {crypto.KeyObject} publicKey
  */
-const exportPublicKey = publicKey => {
+export const exportPublicKey = publicKey => {
     /** @type {crypto.KeyExportOptions<'pem'>} */
     return publicKey.export({
         type: PUBLIC_KEY_TYPE,
@@ -46,7 +46,7 @@ const exportPublicKey = publicKey => {
  *
  * @return {crypto.KeyObject}
  */
-const importPrivateKey = (privateKeyData, passphrase) => {
+export const importPrivateKey = (privateKeyData, passphrase) => {
     /** @type {crypto.PrivateKeyInput} */
     const privateKeyOpts = {
         key: privateKeyData,
@@ -68,7 +68,7 @@ const importPrivateKey = (privateKeyData, passphrase) => {
  *
  * @return {crypto.KeyObject}
  */
-const importPublicKey = publicKeyData => {
+export const importPublicKey = publicKeyData => {
     try {
         return crypto.createPublicKey({
             key: publicKeyData,
@@ -87,7 +87,7 @@ const importPublicKey = publicKeyData => {
  *
  * @return {Promise}
  */
-const writeKeyToFile = async (filename, key, passphrase) => {
+export const writeKeyToFile = async (filename, key, passphrase) => {
     if (typeof key === 'string') {
         key = key.includes('PRIVATE KEY')
             ? importPrivateKey(key, passphrase)
@@ -103,4 +103,4 @@ const writeKeyToFile = async (filename, key, passphrase) => {
     const mode = isPrivateKey ? PRIVATE_KEY_PERMISSIONS : PUBLIC_KEY_PERMISSIONS;
     await fs.promises.writeFile(filename, keyData, { mode });
 };
-export { ACCOUNT_KEY_ALGORITHM, CERTIFICATE_KEY_ALGORITHM, DIRECTORY_URL, PRIVATE_KEY_CIPHER, PRIVATE_KEY_FORMAT, PRIVATE_KEY_PERMISSIONS, PRIVATE_KEY_TYPE, PUBLIC_KEY_FORMAT, PUBLIC_KEY_PERMISSIONS, PUBLIC_KEY_TYPE, env, exportPrivateKey, exportPublicKey, importPrivateKey, importPublicKey, writeKeyToFile };
+
