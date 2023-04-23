@@ -33,7 +33,7 @@ async function buildCache(host) {
     }
     if(!['301', '302'].includes(httpStatus)) {
         httpStatus = '301';
-        console.warn(`The record "${url}" wants to use the http status code ${httpStatus} which is not allowed (only 301 and 302). Using 301 instead.`);
+        throw new Error(`The record "${url}" wants to use the http status code ${httpStatus} which is not allowed (only 301 and 302)`);
     }
     return {
         url,
