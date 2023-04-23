@@ -46,9 +46,9 @@ export async function ensureDir(dir) {
 const parseTxtRecordData = (value) => {
     const result = {};
     for (const part of value.split(';')) {
-        const [key, value] = part.split('=');
-        if (key && value) {
-            result[key] = value;
+        const [key, ...value] = part.split('=');
+        if (key && value.length > 0) {
+            result[key] = value.join('=');
         }
     }
     return result;
