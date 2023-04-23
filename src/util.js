@@ -2,6 +2,8 @@ import { default as axios } from "axios";
 import crypto from "crypto";
 import fs from "fs";
 
+const recordParamDestUrl = 'forward-domain';
+const recordParamHttpStatus = 'http-status';
 const blacklistURL = (process.env.BLACKLIST_HOSTS || "").split(',').reduce((acc, host) => {
     acc[host] = true;
     return acc;
@@ -39,20 +41,35 @@ export async function ensureDir(dir) {
 }
 
 /**
- * @param {string} host
- * @param {string} prefix
+ * @param {string} value
  */
-export async function findTxtRecord(host, prefix, required = true) {
+const parseTxtRecordData = (value) => {
+    const result = {};
+    for (const part of value.split(';')) {
+        const [key, value] = part.split('=');
+        if (key && value) {
+            result[key] = value;
+        }
+    }
+    return result;
+}
+
+/**
+ * @param {string} host
+ * @return {Promise<{url: string, httpStatus?: string} | null>}
+ */
+export async function findTxtRecord(host) {
     const resolve = await axios(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
-            if (!head.data.startsWith(prefix))
+            if (!head.data.includes(recordParamDestUrl))
                 continue;
-            return head.data.slice(prefix.length);
+            const txtData = parseTxtRecordData(head.data);
+            return {
+                url: txtData[recordParamDestUrl], 
+                httpStatus: txtData[recordParamHttpStatus],
+            };
         }
-    }
-    if (required) {
-        throw new Error(prefix + ' TXT is missing');
     }
     return null;
 }
