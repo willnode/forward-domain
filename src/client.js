@@ -1,12 +1,13 @@
 import { client } from "./sni.js";
 import { findTxtRecord, isHostBlacklisted, combineURLs } from "./util.js";
-const record_prefix = 'forward-domain=';
+
 /**
  * @typedef {Object} Cache
  * @property {string} url
  * @property {boolean} expand
  * @property {boolean} blacklisted
  * @property {number} expire
+ * @property {number} httpStatus
  */
 /**
  * @type {Object<string, Cache>}
@@ -18,7 +19,11 @@ const resolveCache = {};
  */
 async function buildCache(host) {
     let expand = false;
-    let url = await findTxtRecord(host, record_prefix);
+    let recordData = await findTxtRecord(host);
+    if (!recordData) {
+        throw new Error(`The record data for "${host}" is missing`);
+    }
+    let {url, httpStatus = '301'} = recordData;
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
         throw new Error(url + ' in TXT record is not an absolute URL');
     }
@@ -26,11 +31,15 @@ async function buildCache(host) {
         url = url.slice(0, -1);
         expand = true;
     }
+    if(!['301', '302'].includes(httpStatus)) {
+        throw new Error(`The record "${url}" wants to use the http status code ${httpStatus} which is not allowed (only 301 and 302)`);
+    }
     return {
         url,
         expand,
         blacklisted: isHostBlacklisted(host),
         expire: Date.now() + 86400 * 1000,
+        httpStatus: parseInt(httpStatus),
     };
 }
 const acme_prefix = '/.well-known/acme-challenge/';
@@ -65,12 +74,12 @@ const listener = async function (req, res) {
             resolveCache[host] = cache;
         }
         if (cache.blacklisted) {
-            res.writeHead(301, {
+            res.writeHead(302, {
                 'Location': (process.env.BLACKLIST_REDIRECT || 'https://forwarddomain.net/blacklisted') + "?d=" + req.headers.host,
             });
             return;
         }
-        res.writeHead(301, {
+        res.writeHead(cache.httpStatus, {
             'Location': cache.expand ? combineURLs(cache.url, url) : cache.url,
         });
         return;

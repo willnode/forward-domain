@@ -7,7 +7,7 @@
 
 > We're back with improvements! See [CHANGES.md](CHANGES.md)
 
-This services forwards domains using 301 HTTP(s) redirects.
+This service forwards domains using 301 HTTP(s) redirects by default.
 
 Possible scenarios:
 
@@ -49,6 +49,14 @@ The star `*` at the end tells us that the remaining URL path is also forwarded t
 
 > If you use Cloudflare or any DNS which supports [CNAME Flattening](https://blog.cloudflare.com/introducing-cname-flattening-rfc-compliant-cnames-at-a-domains-root/), you still can use CNAME records pointing to `r.forwarddomain.net`, it's much recommended to use CNAME records rather than A/AAAA records.
 
+You can choose the type of redirection you want to use by declaring the `http-status` value:
+
+```
+www.old.com     IN    CNAME   r.forwarddomain.net
+_.www.old.com   IN    TXT     http-status=302;forward-domain=https://old.com/*
+```
+
+> Only the http status code 301 and 302 are supported.
 
 ## FAQ
 
