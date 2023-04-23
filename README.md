@@ -7,7 +7,7 @@
 
 > We're back with improvements! See [CHANGES.md](CHANGES.md)
 
-This services forwards domains using 301 HTTP(s) redirects.
+This service forwards domains using 301 HTTP(s) redirects by default.
 
 Possible scenarios:
 
@@ -56,7 +56,7 @@ www.old.com     IN    CNAME   r.forwarddomain.net
 _.www.old.com   IN    TXT     http-status=302;forward-domain=https://old.com/*
 ```
 
-> The default value for "http-status" is `301` if not specified.
+> Only the http status code 301 and 302 are supported.
 
 ## FAQ
 
