@@ -62,9 +62,8 @@ export async function findTxtRecord(host) {
     const resolve = await axios(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
-            if (!head.data.includes(recordParamDestUrl))
-                continue;
             const txtData = parseTxtRecordData(head.data);
+            if (!txtData[recordParamDestUrl]) continue;
             return {
                 url: txtData[recordParamDestUrl], 
                 httpStatus: txtData[recordParamHttpStatus],
