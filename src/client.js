@@ -75,7 +75,7 @@ const listener = async function (req, res) {
             resolveCache[host] = cache;
         }
         if (cache.blacklisted) {
-            res.writeHead(cache.httpStatus, {
+            res.writeHead(302, {
                 'Location': (process.env.BLACKLIST_REDIRECT || 'https://forwarddomain.net/blacklisted') + "?d=" + req.headers.host,
             });
             return;
