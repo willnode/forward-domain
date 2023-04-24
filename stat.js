@@ -1,7 +1,7 @@
 import { config } from "dotenv";
 import { execSync } from "child_process";
 import http from "http";
-import { isMainProcess } from "./src/util";
+import { isMainProcess } from "./src/util.js";
 
 const updateStat = function () {
     // run npm stat

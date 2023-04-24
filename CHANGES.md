@@ -1,5 +1,10 @@
 # CHANGES
 
+## v2.5 (2023-04-24)
+
++ Add `http-status` TXT record option to set HTTP status code. Contributed by [@dzegarra](https://github.com/willnode/forward-domain/pull/4)
++ Improve lock mechanism when a website is verificating certs.
+
 ## v2.4 (2023-04-21)
 
 + Fix global service lock when a website is verificating certs.
