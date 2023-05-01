@@ -5,10 +5,7 @@ import { fileURLToPath } from "url";
 
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
-const blacklistURL = (process.env.BLACKLIST_HOSTS || "").split(',').reduce((acc, host) => {
-    acc[host] = true;
-    return acc;
-}, {});
+let blacklistURL = null;
 
 /**
  * @param {crypto.BinaryLike} str
@@ -18,6 +15,12 @@ export function md5(str) {
 }
 
 export function isHostBlacklisted(domain = '') {
+    if (!blacklistURL) {
+        blacklistURL = (process.env.BLACKLIST_HOSTS || "").split(',').reduce((acc, host) => {
+            acc[host] = true;
+            return acc;
+        }, {})
+    }
     if (domain.length > 6) {
         let p = domain.lastIndexOf('.', domain.length - 6);
         if (p > 0) {
