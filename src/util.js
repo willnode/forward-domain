@@ -1,10 +1,12 @@
 import request from "./certnode/lib/request.js";
 import crypto from "crypto";
 import fs from "fs";
+import { isIPv4, isIPv6 } from "net";
 import { fileURLToPath } from "url";
 
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
+
 let blacklistURL = null;
 
 /**
@@ -28,6 +30,12 @@ export function isHostBlacklisted(domain = '') {
         }
     }
     return blacklistURL[domain];
+}
+/**
+ * @param {string} host
+ */
+export function isIpAddress(host) {
+    return isIPv4(host) || isIPv6(host)
 }
 
 /**

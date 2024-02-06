@@ -1,5 +1,9 @@
 # CHANGES
 
+## v2.6 (2024-02-06)
+
++ Throw error when directly accessing by IP address
+
 ## v2.5 (2023-04-24)
 
 + Add `http-status` TXT record option to set HTTP status code. Contributed by [@dzegarra](https://github.com/willnode/forward-domain/pull/4)

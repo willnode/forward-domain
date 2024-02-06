@@ -245,7 +245,7 @@ class Client {
         if (![200, 201].includes(res.statusCode)) {
             throw new Error(`newAccount() Status Code: ${res.statusCode} Data: ${res.data}`);
         }
-        this.myAccountUrl = res.headers.location;
+        this.myAccountUrl = res.headers.location || "";
         return res.statusCode === 201;
     }
     async newNonce() {

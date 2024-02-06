@@ -1,5 +1,5 @@
 import { client } from "./sni.js";
-import { findTxtRecord, isHostBlacklisted, combineURLs } from "./util.js";
+import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress } from "./util.js";
 
 /**
  * @typedef {Object} Cache
@@ -18,6 +18,9 @@ const resolveCache = {};
  * @returns {Promise<Cache>}
  */
 async function buildCache(host) {
+    if (isIpAddress(host)) {
+        throw new Error('unable to serve with direct IP address');
+    }
     let expand = false;
     let recordData = await findTxtRecord(host);
     if (!recordData) {

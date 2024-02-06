@@ -4,6 +4,7 @@
   "description": "Public service to forward domain for free",
   "main": "app.js",
   "type": "module",
+  "private": true,
   "engines": {
     "node": ">=16.0.0"
   },
@@ -17,13 +18,13 @@
   "author": "Wildan Mubarok",
   "license": "MIT",
   "dependencies": {
-    "async-lock": "^1.4.0",
+    "async-lock": "^1.4.1",
     "await-lock": "^2.2.2",
-    "dotenv": "^16.0.3",
+    "dotenv": "^16.4.1",
     "jose": "^3.20.4",
-    "pem": "^1.14.7"
+    "pem": "^1.14.8"
   },
   "devDependencies": {
-    "pm2": "^5.3.0"
+    "pm2": "^5.3.1"
   }
 }
