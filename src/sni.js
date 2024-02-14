@@ -2,7 +2,7 @@ import tls from "tls";
 import { Client, writeKeyToFile } from "./certnode/lib/index.js";
 import fs from "fs";
 import path from "path";
-import { md5, ensureDir, blacklistRedirectUrl } from "./util.js";
+import { md5, ensureDir, blacklistRedirectUrl, isIpAddress, isHostBlacklisted } from "./util.js";
 import AsyncLock from 'async-lock';
 
 const lock = new AsyncLock();
@@ -20,7 +20,7 @@ const client = new Client();
  */
 
 /**
- * @type {Object<string, Cache>}
+ * @type {Record<string, Cache>}
  */
 const resolveCache = {};
 
@@ -56,11 +56,11 @@ async function buildCache(host) {
         };
     }
     catch {
-        if (!blacklistRedirectUrl) {
+        if ((isHostBlacklisted(host) && !blacklistRedirectUrl) || isIpAddress(host)) {
             return null;
         }
 
-        // only one process can generate certificate at a time
+        // can only process one certificate generation at a time
         return await lock.acquire('cert', async () => {
             const { certificate, privateKeyData } = await client.generateCertificate(host);
             await fs.promises.writeFile(certP, certificate);
@@ -79,8 +79,6 @@ async function buildCache(host) {
  * @param {string} servername
  */
 async function getKeyCert(servername) {
-    // Had to use lock because the best authenticator
-    // library seems don't yet fully stateless.
     servername = servername.toLowerCase();
     const cache = resolveCache[servername];
     if (!cache || (Date.now() > cache.expire)) {

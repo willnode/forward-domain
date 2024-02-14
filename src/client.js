@@ -10,7 +10,7 @@ import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress, blacklistRe
  * @property {number} httpStatus
  */
 /**
- * @type {Object<string, Cache>}
+ * @type {Record<string, Cache>}
  */
 const resolveCache = {};
 /**
