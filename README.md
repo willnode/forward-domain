@@ -5,7 +5,7 @@
 
 <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/7lp67jpzvabtf8opyzaf.png" alt="Banner" width="600">
 
-> We're back with improvements! See [CHANGES.md](CHANGES.md)
+> For hosting guide See [HOSTING.md](HOSTING.md) and [CHANGES.md](CHANGES.md)
 
 This service forwards domains using HTTP(s) redirects.
 

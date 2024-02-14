@@ -20,11 +20,22 @@ This guide will walk you through the process of setting up your own instance of 
 
 | Variable | Description |
 | --- | --- |
-HTTP_PORT | The port to listen for HTTP requests
-HTTPS_PORT | The port to listen for HTTPS requests
-STAT_PORT | The port to listen for getting API metrics
-BLACKLIST_HOSTS | A comma-separated list of hosts to blacklist
-BLACKLIST_REDIRECT | The URL to redirect to when a blacklisted host is accessed
+`HTTP_PORT` | The port to listen for HTTP requests
+`HTTPS_PORT` | The port to listen for HTTPS requests
+`STAT_PORT` | The port to listen for getting API metrics
+`WHITELIST_HOSTS` | A comma-separated list of root domains to whitelist
+`BLACKLIST_HOSTS` | A comma-separated list of root domains to blacklist
+`BLACKLIST_REDIRECT` | The URL to redirect to when a blacklisted host is accessed
+
+If `WHITELIST_HOSTS` is set, `BLACKLIST_HOSTS` is ignored. Both is mutually exclusive.
+
+If `BLACKLIST_REDIRECT` empty or unset, it will not attempt to generate certificates on HTTPS (resulting "alert handshake failure" closing connection immediately) or return 403 on HTTP. It's recommended to leave this blank if `WHITELIST_HOSTS` is set.
+
+### Startup Files
+
++ `app.js` This is the startup file for production, listening on both `HTTP_PORT` and `HTTPS_PORT`.
++ `index.js` This is for development or testing only, listening to only `HTTP_PORT` on main or exporting the module.
++ `stat.js` A simple background service [for providing stat](https://s.forwarddomain.net) listening to `STAT_PORT`. 
 
 ### SSL Certificates
 
@@ -44,7 +55,7 @@ This configuration below, setups the following:
 + Port `80` is listened by `http` block, with default site forwards connection to port `5080`.
 + Port `443` is listened by `stream` block, with default stream forwards connection to port `5443`.
 + All normal HTTPS connection in `http` block listen to `6443`, to be cached by some domains in `stream` block.
-+ Port `5080` and `5443` is set for `forward-domain` service listened to.
++ Port `5080` and `5443` and `5900` for http, https and stat is set for `forward-domain` service listened to.
 
 
 ```nginx
