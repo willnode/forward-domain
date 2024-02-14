@@ -7,7 +7,9 @@ import { fileURLToPath } from "url";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 
-let blacklistURL = null;
+let blacklistMap = null;
+let whitelistMap = null;
+export const blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT;
 
 /**
  * @param {crypto.BinaryLike} str
@@ -16,20 +18,48 @@ export function md5(str) {
     return crypto.createHash('md5').update(str).digest('hex');
 }
 
-export function isHostBlacklisted(domain = '') {
-    if (!blacklistURL) {
-        blacklistURL = (process.env.BLACKLIST_HOSTS || "").split(',').reduce((acc, host) => {
-            acc[host] = true;
-            return acc;
-        }, {})
-    }
+/**
+ * @param {string} str
+ * @return {Record<string, true>}
+ */
+function csvToMap(str) {
+    return (str || "").split(',').reduce((acc, host) => {
+        acc[host.toLowerCase()] = true;
+        return acc;
+    }, {})
+}
+
+/**
+ * @param {string} domain
+ * @return {string}
+ */
+function getCanonDomain(domain) {
+    // TODO: This is a wild approximation to get 
+    // "example.com" out of "subdomain.example.com"
+    // should use PSL for accuracy but I don't want to 
+    // compromise performance here
     if (domain.length > 6) {
         let p = domain.lastIndexOf('.', domain.length - 6);
         if (p > 0) {
             domain = domain.substring(p + 1);
         }
     }
-    return blacklistURL[domain];
+    return domain;
+}
+
+export function isHostBlacklisted(domain = '') {
+    if (blacklistMap === null) {
+        if (process.env.WHITELIST_HOSTS) {
+            whitelistMap = csvToMap(process.env.WHITELIST_HOSTS || "");
+        }
+        blacklistMap = csvToMap(process.env.BLACKLIST_HOSTS || "");
+    }
+    
+    if (whitelistMap === null) {
+        return blacklistMap[getCanonDomain(domain)];
+    } else {
+        return !whitelistMap[getCanonDomain(domain)];
+    }
 }
 /**
  * @param {string} host
@@ -77,7 +107,7 @@ export async function findTxtRecord(host) {
             const txtData = parseTxtRecordData(head.data);
             if (!txtData[recordParamDestUrl]) continue;
             return {
-                url: txtData[recordParamDestUrl], 
+                url: txtData[recordParamDestUrl],
                 httpStatus: txtData[recordParamHttpStatus],
             };
         }

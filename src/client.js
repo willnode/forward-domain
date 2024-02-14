@@ -1,5 +1,5 @@
 import { client } from "./sni.js";
-import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress } from "./util.js";
+import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress, blacklistRedirectUrl } from "./util.js";
 
 /**
  * @typedef {Object} Cache
@@ -26,7 +26,7 @@ async function buildCache(host) {
     if (!recordData) {
         throw new Error(`The record data for "${host}" is missing`);
     }
-    let {url, httpStatus = '301'} = recordData;
+    let { url, httpStatus = '301' } = recordData;
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
         throw new Error(url + ' in TXT record is not an absolute URL');
     }
@@ -34,7 +34,7 @@ async function buildCache(host) {
         url = url.slice(0, -1);
         expand = true;
     }
-    if(!['301', '302'].includes(httpStatus)) {
+    if (!['301', '302'].includes(httpStatus)) {
         throw new Error(`The record "${url}" wants to use the http status code ${httpStatus} which is not allowed (only 301 and 302)`);
     }
     return {
@@ -77,9 +77,14 @@ const listener = async function (req, res) {
             resolveCache[host] = cache;
         }
         if (cache.blacklisted) {
-            res.writeHead(302, {
-                'Location': (process.env.BLACKLIST_REDIRECT || 'https://forwarddomain.net/blacklisted') + "?d=" + req.headers.host,
-            });
+            if (blacklistRedirectUrl) {
+                res.writeHead(302, {
+                    'Location': blacklistRedirectUrl + "?d=" + encodeURIComponent(req.headers.host + ""),
+                });
+            } else {
+                res.writeHead(403);
+                res.write('Host is forbidden');
+            }
             return;
         }
         res.writeHead(cache.httpStatus, {
@@ -88,8 +93,9 @@ const listener = async function (req, res) {
         return;
     }
     catch (error) {
-        res.writeHead(400);
-        res.write(error.message || 'Unknown error');
+        const message = error?.message;
+        res.writeHead(message ? 400 : 500);
+        res.write(message || 'Unknown error');
     }
     finally {
         res.end();

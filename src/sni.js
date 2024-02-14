@@ -2,7 +2,7 @@ import tls from "tls";
 import { Client, writeKeyToFile } from "./certnode/lib/index.js";
 import fs from "fs";
 import path from "path";
-import { md5, ensureDir } from "./util.js";
+import { md5, ensureDir, blacklistRedirectUrl } from "./util.js";
 import AsyncLock from 'async-lock';
 
 const lock = new AsyncLock();
@@ -55,7 +55,11 @@ async function buildCache(host) {
             expire
         };
     }
-    catch (error) {
+    catch {
+        if (!blacklistRedirectUrl) {
+            return null;
+        }
+
         // only one process can generate certificate at a time
         return await lock.acquire('cert', async () => {
             const { certificate, privateKeyData } = await client.generateCertificate(host);
@@ -78,11 +82,18 @@ async function getKeyCert(servername) {
     // Had to use lock because the best authenticator
     // library seems don't yet fully stateless.
     servername = servername.toLowerCase();
-    let cache = resolveCache[servername];
-    await ensureDir(certsDir);
+    const cache = resolveCache[servername];
     if (!cache || (Date.now() > cache.expire)) {
-        cache = await buildCache(servername);
-        resolveCache[servername] = cache;
+        await ensureDir(certsDir);
+        let cacheNew = await buildCache(servername);
+        if (!cacheNew) {
+            return undefined;
+        }
+        resolveCache[servername] = cacheNew;
+        return {
+            key: cacheNew.key,
+            cert: cacheNew.cert,
+        }
     }
     return {
         key: cache.key,
@@ -96,7 +107,8 @@ async function getKeyCert(servername) {
 async function SniListener(servername, ctx) {
     // Generate fresh account keys for Let's Encrypt
     try {
-        ctx(null, tls.createSecureContext(await getKeyCert(servername)));
+        const keyCert = await getKeyCert(servername);
+        ctx(null, keyCert && tls.createSecureContext(keyCert));
     }
     catch (error) {
         console.log(error);
