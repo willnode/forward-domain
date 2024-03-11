@@ -1,16 +1,30 @@
-import { config } from "dotenv";
+import https from "https";
 import http from "http";
 import listener from "./src/client.js";
+import { SniPrepare, SniListener } from "./src/sni.js";
 import { isMainProcess } from "./src/util.js";
 
 // development endpoint (use ngrok)
-const server = http.createServer(listener);
+const plainServer = http.createServer(listener);
+const secureServer = https.createServer({
+    SNICallback: SniListener,
+}, listener);
+
+secureServer.on('listening', SniPrepare);
+
 if (isMainProcess(import.meta.url)) {
-    config();
+    import ("dotenv/config.js");
     const port = parseInt(process.env.HTTP_PORT || "3000");
-    server.listen(port, function () {
-        console.log(`server start at port ${port}`);
+    plainServer.listen(port, function () {
+        console.log(`HTTP server start at port ${port}`);
     });
 }
 
-export default server;
+// default export is to be deprecated
+export default plainServer;
+
+export {
+    plainServer,
+    secureServer
+}
+

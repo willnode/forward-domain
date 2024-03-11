@@ -1,23 +1,8 @@
-import { config } from "dotenv";
-import https from "https";
-import app from "./index.js";
-import listener from "./src/client.js";
-import { SniPrepare, SniListener } from "./src/sni.js";
-// production endpoint (use pm2/phusion/whatever)
-config();
+import "dotenv/config.js";
+import {plainServer, secureServer} from "./index.js";
 
 const port80 = parseInt(process.env.HTTP_PORT || "80");
 const port443 = parseInt(process.env.HTTPS_PORT || "443");
-const main = async () => {
-    await SniPrepare();
-    const httpsServer = https.createServer({
-        SNICallback: SniListener,
-    }, listener);
-    httpsServer.listen(port443);
-    app.listen(port80);
-};
 
-main().catch((err) => {
-    console.log(err);
-    process.exit(1);
-});
+plainServer.listen(port80, () => console.log(`HTTP server start at port ${port80}`));
+secureServer.listen(port443, () => console.log(`HTTPS server start at port ${port443}`));

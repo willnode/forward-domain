@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Public service to forward domain for free",
   "main": "app.js",
+  "exports": {
+    ".": "./index.js"
+  },
   "type": "module",
   "private": true,
   "engines": {

@@ -9,7 +9,11 @@ const recordParamHttpStatus = 'http-status';
 
 let blacklistMap = null;
 let whitelistMap = null;
-export const blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT;
+
+/**
+ * @type {string?}
+ */
+export let blacklistRedirectUrl = null;
 
 /**
  * @param {crypto.BinaryLike} str
@@ -53,6 +57,7 @@ export function isHostBlacklisted(domain = '') {
             whitelistMap = csvToMap(process.env.WHITELIST_HOSTS || "");
         }
         blacklistMap = csvToMap(process.env.BLACKLIST_HOSTS || "");
+        blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT || null;
     }
     
     if (whitelistMap === null) {
