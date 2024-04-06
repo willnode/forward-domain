@@ -6,7 +6,8 @@ import { md5, ensureDir, blacklistRedirectUrl, isIpAddress, isHostBlacklisted } 
 import AsyncLock from 'async-lock';
 
 const lock = new AsyncLock();
-const __dirname = new URL('.', import.meta.url).pathname;
+// the regex is for Windows shenanigans
+const __dirname = new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:\/)/, '$1');
 const certsDir = path.join(__dirname, '../.certs');
 const accountDir = path.join(__dirname, '../.certs/account');
 const client = new Client();
@@ -118,11 +119,15 @@ const SniPrepare = async () => {
     await ensureDir(accountDir);
     if (fs.existsSync(path.join(accountDir, 'privateKey.pem')) &&
         fs.existsSync(path.join(accountDir, 'publicKey.pem'))) {
+        console.log("SNI eac");
         await client.importAccountKeyPair(accountDir, '');
     }
     else {
+        console.log("SNI creeate");
         await client.generateAccountKeyPair();
         await client.exportAccountKeyPair(accountDir, '');
     }
+    console.log("SNI prep");
+
 };
 export { SniListener, SniPrepare, client };

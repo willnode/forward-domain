@@ -1,4 +1,3 @@
-import "dotenv/config.js";
 import {plainServer, secureServer} from "./index.js";
 
 const port80 = parseInt(process.env.HTTP_PORT || "80");

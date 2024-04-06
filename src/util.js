@@ -77,6 +77,7 @@ export function isIpAddress(host) {
  * @param {fs.PathLike} dir
  */
 export async function ensureDir(dir) {
+    console.log(dir);
     try {
         await fs.promises.access(dir, fs.constants.W_OK | fs.constants.O_DIRECTORY);
     }

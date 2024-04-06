@@ -1,4 +1,3 @@
-import { config } from "dotenv";
 import { execSync } from "child_process";
 import http from "http";
 import { isMainProcess } from "./src/util.js";
@@ -59,7 +58,6 @@ const listener = async function (/** @type {import('http').IncomingMessage} */ r
 const server = http.createServer(listener);
 
 if (isMainProcess(import.meta.url)) {
-    config();
     const port = parseInt(process.env.STAT_PORT || "3000");
     server.listen(port, function () {
         console.log(`server start at port ${port}`);
