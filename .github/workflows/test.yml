@@ -20,4 +20,4 @@ jobs:
     - name: Install deps
       run: npm install 
     - name: Test
-      run: bun run test
+      run: env PATH=${PATH}:`go env GOPATH`/bin bun run test
