@@ -8,9 +8,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Set up Node
-      uses: actions/setup-node
+      uses: actions/setup-node@v4
     - name: Set up Bun
-      uses: actions/setup-bun
+      uses: actions/setup-bun@v1
     - name: Set up Go
       uses: actions/setup-go@v3
     - name: Install dnsserver
