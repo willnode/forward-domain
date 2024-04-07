@@ -13,10 +13,10 @@ jobs:
       uses: oven-sh/setup-bun@v1
     - name: Set up Go
       uses: actions/setup-go@v3
+    - name: Install pebble
+      run: go install github.com/letsencrypt/pebble/cmd/pebble@latest
     - name: Install dnsserver
       run: go install github.com/dlorch/dnsserver@latest
-    - name: Install pebble
-      run: go install github.com/letsencrypt/pebble/cmd/pebble
     - name: Install deps
       run: npm install 
     - name: Test
