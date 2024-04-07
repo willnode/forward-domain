@@ -5,20 +5,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-
-	"github.com/letsencrypt/challtestsrv"
+	"time"
 )
 
 func main() {
-
-	challSrv, err := challtestsrv.New(challtestsrv.Config{
-		HTTPOneAddrs: []string{":8888"},
-	})
-	if err != nil {
-		panic(err)
-	}
-	go challSrv.Run()
-
 	// Get the current working directory.
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -29,14 +19,55 @@ func main() {
 	// Get the parent directory.
 	parentDir := filepath.Dir(currentDir)
 
+	dns := exec.Command("dnsserver")
+	dns.Stderr = os.Stderr
+	dns.Stdout = os.Stdout
+
+	err = dns.Start()
+	if err != nil {
+		fmt.Println("Server Error:", err)
+		os.Exit(1)
+	}
+
+	chall := exec.Command("pebble", "-dnsserver", "127.0.0.1:1053")
+	chall.Stderr = os.Stderr
+	chall.Stdout = os.Stdout
+
+	err = chall.Start()
+	if err != nil {
+		fmt.Println("Server Error:", err)
+		os.Exit(1)
+	}
+
+	time.Sleep(time.Millisecond * 1000)
+
+	serv := exec.Command("node", "--env-file=.env.test", "app.js")
+	serv.Dir = parentDir
+	serv.Stderr = os.Stderr
+	serv.Stdout = os.Stdout
+
+	err = serv.Start()
+	if err != nil {
+		fmt.Println("Server Error:", err)
+		os.Exit(1)
+	}
+
+	time.Sleep(time.Millisecond * 1000)
+
 	cmd := exec.Command("bun", "test", "--timeout", "60000")
 	cmd.Dir = parentDir
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
 	err = cmd.Run()
+
+	time.Sleep(time.Millisecond * 1000)
+
+	serv.Process.Kill()
+	dns.Process.Kill()
 	if err != nil {
-		fmt.Println("Error:", err)
+		fmt.Println("Test Error:", err)
 		os.Exit(1)
 	}
+	os.Exit(0)
 }

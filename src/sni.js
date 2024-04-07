@@ -121,8 +121,7 @@ const SniPrepare = async () => {
         fs.existsSync(path.join(accountDir, 'publicKey.pem'))) {
         console.log("SNI eac");
         await client.importAccountKeyPair(accountDir, '');
-    }
-    else {
+    } else {
         console.log("SNI creeate");
         await client.generateAccountKeyPair();
         await client.exportAccountKeyPair(accountDir, '');

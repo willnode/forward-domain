@@ -4,10 +4,10 @@ This guide will walk you through the process of setting up your own instance of 
 
 ## Prerequisites
 
-- `bun` Latest Bun.js (1.1 or higher)
+- `node` LTS node (20.x or Higher)
 - `openssl` required for signing certs
+- `bun` (>= 1.1) and `go` (>= 1.22) for running tests
 - `find`, `grep`, `wc` (linux standard tools) for running stats
-- `go` 1.22 or higher for testing
 - A machine with public IP address installed
 
 ## Installation

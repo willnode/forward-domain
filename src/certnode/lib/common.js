@@ -5,7 +5,7 @@ export const CERTIFICATE_KEY_ALGORITHM = 'RS256';
 export const DIRECTORY_URL = {
     'production': 'https://acme-v02.api.letsencrypt.org/directory',
     'development': 'https://acme-staging-v02.api.letsencrypt.org/directory',
-    'test': 'http://localhost:8888/directory',
+    'test': 'https://localhost:14000/dir',
 }[(process.env.NODE_ENV || 'development').trim().toLowerCase()]
 export const PRIVATE_KEY_CIPHER = 'aes-256-cbc';
 export const PRIVATE_KEY_FORMAT = 'pem';

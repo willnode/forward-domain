@@ -13,8 +13,8 @@
   },
   "scripts": {
     "test": "(cd test && go run .)",
-    "start": "bun app.js",
-    "start-proxied": "bun app.js 5080 5443",
+    "start": "NODE_ENV=production node --env-file=.env app.js",
+    "start-proxied": "node app.js 5080 5443",
     "count": "find .certs -type d | grep '.\\.'  | wc -l"
   },
   "keywords": [],

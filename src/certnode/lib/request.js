@@ -14,7 +14,7 @@ const request = (url, { data = '', ...options } = {}, cb) => {
         catch (err) {
             return reject(err);
         }
-        (url.protocol == 'https' ? https : http).request(url, options, res => {
+        (url.protocol == 'https:' ? https : http).request(url, options, res => {
             const { statusCode, headers } = res;
             let data = '';
             res
