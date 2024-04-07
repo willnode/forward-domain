@@ -52,7 +52,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond * 5000)
 
 	cmd := exec.Command("bun", "test", "--timeout", "60000")
 	cmd.Dir = parentDir
@@ -65,6 +65,7 @@ func main() {
 
 	serv.Process.Kill()
 	dns.Process.Kill()
+	exec.Command("killall", "pebble").Run()
 	if err != nil {
 		fmt.Println("Test Error:", err)
 		os.Exit(1)

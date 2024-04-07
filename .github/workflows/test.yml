@@ -1,0 +1,23 @@
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Node
+      uses: actions/setup-node
+    - name: Set up Bun
+      uses: actions/setup-bun
+    - name: Set up Go
+      uses: actions/setup-go@v3
+    - name: Install dnsserver
+      run: go install github.com/dlorch/dnsserver
+    - name: Install pebble
+      run: go install github.com/letsencrypt/pebble/cmd/pebble
+    - name: Install deps
+      run: npm install 
+    - name: Test
+      run: bun run test
