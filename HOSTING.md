@@ -6,7 +6,7 @@ This guide will walk you through the process of setting up your own instance of 
 
 - `node` LTS node (20.x or Higher)
 - `openssl` required for signing certs
-- `bun` (>= 1.1) and `go` (>= 1.22) for running tests
+- `go` (>= 1.22) for running tests
 - `find`, `grep`, `wc` (linux standard tools) for running stats
 - A machine with public IP address installed
 
