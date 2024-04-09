@@ -119,14 +119,12 @@ const SniPrepare = async () => {
     await ensureDir(accountDir);
     if (fs.existsSync(path.join(accountDir, 'privateKey.pem')) &&
         fs.existsSync(path.join(accountDir, 'publicKey.pem'))) {
-        console.log("SNI eac");
         await client.importAccountKeyPair(accountDir, '');
     } else {
-        console.log("SNI creeate");
+        console.log("Creating new account key pair");
         await client.generateAccountKeyPair();
         await client.exportAccountKeyPair(accountDir, '');
     }
-    console.log("SNI prep");
 
 };
 export { SniListener, SniPrepare, client };

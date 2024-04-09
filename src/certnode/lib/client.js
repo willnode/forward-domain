@@ -174,10 +174,13 @@ class Client {
         // @ts-ignore
         const clientKey = common.exportPrivateKey(privateKey);
         let { csr
-        // @ts-ignore
-         } = await createCsr({
+            // @ts-ignore
+        } = await createCsr({
             clientKey,
+            // commonName is deprecated, use altNames
+            // https://github.com/letsencrypt/pebble/issues/233
             commonName: domain,
+            altNames: [domain],
         });
         // "The CSR is sent in the base64url-encoded version of the DER format.
         // (Note: Because this field uses base64url, and does not include headers,
@@ -190,21 +193,41 @@ class Client {
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=/g, '');
-        const data = await this.sign({
-            kid: this.myAccountUrl,
-            nonce: this.replayNonce,
-            url: finalizeUrl
-        }, {
-            csr
-        });
-        const res = await request(finalizeUrl, {
-            method: 'POST',
-            headers: {
-                'content-type': 'application/jose+json'
-            },
-            data
-        });
-        this.setReplayNonce(res);
+
+
+        const sendFinalizeRequest = async (finalizeUrl, csr) => {
+            const data = await this.sign({
+                kid: this.myAccountUrl,
+                nonce: this.replayNonce,
+                url: finalizeUrl
+            }, {
+                csr
+            });
+
+            const res = await request(finalizeUrl, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/jose+json'
+                },
+                data
+            });
+            this.setReplayNonce(res);
+            return res;
+        }
+        let res = await sendFinalizeRequest(finalizeUrl, csr);
+        // Let's encrypt actually want this to work!
+        // https://community.letsencrypt.org/t/enabling-asynchronous-order-finalization/193522
+        while (res.data.status === 'processing') {
+            let retryUrl = res.headers.location || '';
+            let retryTime = parseInt(res.headers["retry-after"] || '1') * 1000
+            // sleep, retry
+            await new Promise(resolve => setTimeout(resolve, retryTime))
+            res = await sendFinalizeRequest(retryUrl, "");
+            if (res.data.status == "ready") {
+                res = await sendFinalizeRequest(res.data.finalize, "");
+                break
+            }
+        }
         if (res.statusCode !== 200) {
             throw new Error(`finalizeOrder() Status Code: ${res.statusCode} Data: ${res.data}`);
         }
@@ -213,6 +236,7 @@ class Client {
             certificate,
             privateKeyData: clientKey
         };
+
     }
     async initAccountJwks() {
         if (this.accountPrivateKey == null || this.accountPublicKey == null) {
@@ -362,9 +386,9 @@ class Client {
         if (payload) {
             data = await new SignJWT(payload)
                 .setProtectedHeader({
-                alg: common.ACCOUNT_KEY_ALGORITHM,
-                ...header
-            })
+                    alg: common.ACCOUNT_KEY_ALGORITHM,
+                    ...header
+                })
                 .sign(this.accountPrivateKey);
         }
         else {

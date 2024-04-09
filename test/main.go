@@ -1,8 +1,9 @@
 package main
 
 import (
-	"errors"
+	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -68,19 +69,31 @@ func main() {
 		fmt.Println("Test Error:", err)
 		os.Exit(1)
 	}
+
+	fmt.Println("Test Successfull!!!!")
+
 	os.Exit(0)
 }
 
 func test() error {
 	url := "http://localhost:8880/hello"
 
-	client := &http.Client{}
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "r.forwarddomain.net"},
+	}
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+		Transport: tr,
+	}
+
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}
 
-	req.Header.Add("host", "r.forwarddomain.net")
+	req.Host = "r.forwarddomain.net"
 	req.Header.Add("accept", "text/plain")
 	req.Header.Add("user-agent", "test")
 
@@ -90,23 +103,29 @@ func test() error {
 	}
 	defer resp.Body.Close()
 
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+	bodyString := string(bodyBytes)
+	fmt.Println(bodyString)
+
 	if resp.StatusCode != 302 {
-		return errors.New(fmt.Sprintf("Expected status code 302, got %d", resp.StatusCode))
+		return fmt.Errorf("expected status code 302, got %d", resp.StatusCode)
 	}
 
 	location, ok := resp.Header["Location"]
 	if !ok || location[0] != "https://forwarddomain.net/hello" {
-		return errors.New(fmt.Sprintf("Expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0]))
+		return fmt.Errorf("expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0])
 	}
 
 	url = "https://localhost:8843/hello"
 
-	client = &http.Client{}
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
 		return err
 	}
-
+	req.Host = "r.forwarddomain.net"
 	req.Header.Add("host", "r.forwarddomain.net")
 	req.Header.Add("accept", "text/plain")
 	req.Header.Add("user-agent", "test")
@@ -118,12 +137,12 @@ func test() error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 302 {
-		return errors.New(fmt.Sprintf("Expected status code 302, got %d", resp.StatusCode))
+		return fmt.Errorf("expected status code 302, got %d", resp.StatusCode)
 	}
 
 	location, ok = resp.Header["Location"]
 	if !ok || location[0] != "https://forwarddomain.net/hello" {
-		return errors.New(fmt.Sprintf("Expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0]))
+		return fmt.Errorf("expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0])
 	}
 
 	return nil
