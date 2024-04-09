@@ -47,7 +47,7 @@ SSL certificates is saved in `./.certs` directory. No additional configuration i
 
 ## Running the App
 
-`sudo bun start` is recommended to run the app. This is because the app needs to listen to port 80 and 443 directly, which requires root access.
+`sudo npm start` is recommended to run the app. This is because the app needs to listen to port 80 and 443 directly, which requires root access.
 
 If you want to run the app without root access, or wanted to filter some domains for other services, you have to use NGINX with stream plugin.
 
