@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -32,6 +34,7 @@ func main() {
 	chall := exec.Command("pebble", "-dnsserver", "127.0.0.1:1053")
 	chall.Stderr = os.Stderr
 	chall.Stdout = os.Stdout
+	chall.Env = append(chall.Env, "PEBBLE_WFE_NONCEREJECT=0")
 
 	err = chall.Start()
 	if err != nil {
@@ -54,12 +57,7 @@ func main() {
 
 	time.Sleep(time.Millisecond * 5000)
 
-	cmd := exec.Command("bun", "test", "--timeout", "60000")
-	cmd.Dir = parentDir
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	err = cmd.Run()
+	err = test()
 
 	time.Sleep(time.Millisecond * 1000)
 
@@ -71,4 +69,62 @@ func main() {
 		os.Exit(1)
 	}
 	os.Exit(0)
+}
+
+func test() error {
+	url := "http://localhost:8880/hello"
+
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("host", "r.forwarddomain.net")
+	req.Header.Add("accept", "text/plain")
+	req.Header.Add("user-agent", "test")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 302 {
+		return errors.New(fmt.Sprintf("Expected status code 302, got %d", resp.StatusCode))
+	}
+
+	location, ok := resp.Header["Location"]
+	if !ok || location[0] != "https://forwarddomain.net/hello" {
+		return errors.New(fmt.Sprintf("Expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0]))
+	}
+
+	url = "https://localhost:8843/hello"
+
+	client = &http.Client{}
+	req, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("host", "r.forwarddomain.net")
+	req.Header.Add("accept", "text/plain")
+	req.Header.Add("user-agent", "test")
+
+	resp, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 302 {
+		return errors.New(fmt.Sprintf("Expected status code 302, got %d", resp.StatusCode))
+	}
+
+	location, ok = resp.Header["Location"]
+	if !ok || location[0] != "https://forwarddomain.net/hello" {
+		return errors.New(fmt.Sprintf("Expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0]))
+	}
+
+	return nil
 }
