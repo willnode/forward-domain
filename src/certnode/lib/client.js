@@ -195,14 +195,12 @@ class Client {
             .replace(/=/g, '');
 
 
-        const sendFinalizeRequest = async (finalizeUrl, csr) => {
+        const sendFinalizeRequest = async (finalizeUrl, payload) => {
             const data = await this.sign({
                 kid: this.myAccountUrl,
                 nonce: this.replayNonce,
                 url: finalizeUrl
-            }, {
-                csr
-            });
+            }, payload);
 
             const res = await request(finalizeUrl, {
                 method: 'POST',
@@ -214,7 +212,7 @@ class Client {
             this.setReplayNonce(res);
             return res;
         }
-        let res = await sendFinalizeRequest(finalizeUrl, csr);
+        let res = await sendFinalizeRequest(finalizeUrl, { csr });
         // Let's encrypt actually want this to work!
         // https://community.letsencrypt.org/t/enabling-asynchronous-order-finalization/193522
         while (res.data.status === 'processing') {
