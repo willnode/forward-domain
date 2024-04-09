@@ -32,7 +32,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	chall := exec.Command("pebble", "-dnsserver", "127.0.0.1:1053")
+	chall := exec.Command("pebble", "-dnsserver", "127.0.0.1:1053", "-config", "pebble-config.json")
 	chall.Stderr = os.Stderr
 	chall.Stdout = os.Stdout
 	chall.Env = append(chall.Env, "PEBBLE_WFE_NONCEREJECT=0")

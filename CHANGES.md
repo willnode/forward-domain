@@ -1,5 +1,19 @@
 # CHANGES
 
+## v3.0-beta1 (2024-04-09)
+
+> We're preparing for many breaking changes, stay tuned!
+
++ Add integration tests with [Pebble](https://github.com/letsencrypt/pebble)
+  + Changed few things to make  future Let's Encrypt Happy:
+    + Added [`SubjectAltName`](https://github.com/letsencrypt/pebble/issues/233) in addition to `CommonName` when doing CSR
+    + Added support for [asynchronous Let's Encrypt order flow](https://community.letsencrypt.org/t/193522)
++ Add a domain whitelists mechanism
++ Removed `pm2` and `dotenv` to make CI's installation faster
+  + Please install `pm2` manually if you need that (`npx pm2`)
+  + Please load `.env` manually with `--env-file=.env` (Node >= 20)
++ `index.js` now exports `plainServer` and `secureServer`
+
 ## v2.6 (2024-02-06)
 
 + Throw error when directly accessing by IP address
