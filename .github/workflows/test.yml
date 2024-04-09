@@ -16,7 +16,7 @@ jobs:
       with:
         go-version: '^1.22.1'
     - name: Install pebble
-      run: go install github.com/letsencrypt/pebble/cmd/pebble/v2@latest
+      run: go install github.com/letsencrypt/pebble/v2/cmd/pebble@v2.5.1
     - name: Install dnsserver
       run: go install github.com/dlorch/dnsserver@latest
     - name: Install deps
