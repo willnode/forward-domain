@@ -24,8 +24,5 @@
     "async-lock": "^1.4.1",
     "jose": "^3.20.4",
     "pem": "^1.14.8"
-  },
-  "devDependencies": {
-    "bun-types": "^1.1.2"
   }
 }
