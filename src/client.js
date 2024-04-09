@@ -65,7 +65,7 @@ const listener = async function (req, res) {
             }
             return;
         }
-        const host = (req.headers.host || '').toLowerCase();
+        const host = (req.headers.host || '').toLowerCase().replace(/:\d+$/, '');
         if (!host) {
             res.writeHead(400);
             res.write('Host header is required');

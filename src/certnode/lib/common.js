@@ -1,11 +1,12 @@
-import crypto from "crypto";
-import fs from "fs";
+import crypto from "node:crypto";
+import fs from "node:fs";
 export const ACCOUNT_KEY_ALGORITHM = 'ES256';
 export const CERTIFICATE_KEY_ALGORITHM = 'RS256';
-const env = (process.env.NODE_ENV || '').trim().toLowerCase();
-export const DIRECTORY_URL = ['development', 'test'].includes(env)
-    ? 'https://acme-staging-v02.api.letsencrypt.org/directory'
-    : 'https://acme-v02.api.letsencrypt.org/directory';
+export const DIRECTORY_URL = {
+    'production': 'https://acme-v02.api.letsencrypt.org/directory',
+    'development': 'https://acme-staging-v02.api.letsencrypt.org/directory',
+    'test': 'https://localhost:14000/dir',
+}[(process.env.NODE_ENV || 'development').trim().toLowerCase()]
 export const PRIVATE_KEY_CIPHER = 'aes-256-cbc';
 export const PRIVATE_KEY_FORMAT = 'pem';
 export const PRIVATE_KEY_PERMISSIONS = 0o600;

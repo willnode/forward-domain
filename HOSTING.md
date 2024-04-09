@@ -4,8 +4,11 @@ This guide will walk you through the process of setting up your own instance of 
 
 ## Prerequisites
 
-- [Node.js](https://nodejs.org/en/) (version 16 or higher).
-- A machine with public IP address installed.
+- `node` LTS node (20.x or Higher)
+- `openssl` required for signing certs
+- `go` (>= 1.22) for running tests
+- `find`, `grep`, `wc` (linux standard tools) for running stats
+- A machine with public IP address installed
 
 ## Installation
 
@@ -26,6 +29,7 @@ This guide will walk you through the process of setting up your own instance of 
 `WHITELIST_HOSTS` | A comma-separated list of root domains to whitelist
 `BLACKLIST_HOSTS` | A comma-separated list of root domains to blacklist
 `BLACKLIST_REDIRECT` | The URL to redirect to when a blacklisted host is accessed
+`OPENSSL_BIN` | (used by `pem` package) Path to `openssl` to override from PATH
 
 If `WHITELIST_HOSTS` is set, `BLACKLIST_HOSTS` is ignored. Both is mutually exclusive.
 
@@ -45,9 +49,11 @@ SSL certificates is saved in `./.certs` directory. No additional configuration i
 
 `sudo npm start` is recommended to run the app. This is because the app needs to listen to port 80 and 443 directly, which requires root access.
 
-If you want to run the app without root access, or wanted to filter some domains for other services, you have to use NGINX with stream plugin 
+If you want to run the app without root access, or wanted to filter some domains for other services, you have to use NGINX with stream plugin.
 
 ## NGINX + Stream Plugin
+
+You cannot run this server via regular NGINX's `server` directive because that's mean you won't get benefited from automatic HTTPS cert installation and only-DNS-needed setup approach.
 
 [NGINX Stream plugin](http://nginx.org/en/docs/stream/ngx_stream_core_module.html) is used to filter some domain while still be able forwards HTTPS connection directly. It has to be that way since NGINX doesn't handle HTTPS certificates.
 

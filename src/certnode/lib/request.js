@@ -1,4 +1,5 @@
-import https from "https";
+import http from "node:http";
+import https from "node:https";
 /**
  * @param {string | URL} url
  * @param {import('https').RequestOptions & {data?: string}} [options]
@@ -13,7 +14,7 @@ const request = (url, { data = '', ...options } = {}, cb) => {
         catch (err) {
             return reject(err);
         }
-        https.request(url, options, res => {
+        (url.protocol == 'https:' ? https : http).request(url, options, res => {
             const { statusCode, headers } = res;
             let data = '';
             res

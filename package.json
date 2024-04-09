@@ -12,9 +12,9 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "pm2 start app.js",
-    "start-proxied": "pm2 start app.js -- 5080 5443",
+    "test": "(cd test && go run .)",
+    "start": "NODE_ENV=production node --env-file=.env app.js",
+    "start-proxied": "node app.js 5080 5443",
     "count": "find .certs -type d | grep '.\\.'  | wc -l"
   },
   "keywords": [],
@@ -22,12 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "async-lock": "^1.4.1",
-    "await-lock": "^2.2.2",
-    "dotenv": "^16.4.1",
     "jose": "^3.20.4",
     "pem": "^1.14.8"
-  },
-  "devDependencies": {
-    "pm2": "^5.3.1"
   }
 }
