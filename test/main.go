@@ -24,7 +24,7 @@ func main() {
 
 	dns := exec.Command("dnsserver")
 	dns.Stderr = os.Stderr
-	dns.Stdout = os.Stdout
+	// dns.Stdout = os.Stdout
 
 	err = dns.Start()
 	if err != nil {
@@ -46,6 +46,8 @@ func main() {
 	time.Sleep(time.Millisecond * 1000)
 
 	serv := exec.Command("node", "--env-file=.env.test", "app.js")
+	serv.Env = os.Environ()
+	serv.Env = append(serv.Env, "NODE_EXTRA_CA_CERTS=test/certs/pebble.minica.pem")
 	serv.Dir = parentDir
 	serv.Stderr = os.Stderr
 	serv.Stdout = os.Stdout
@@ -71,7 +73,6 @@ func main() {
 	}
 
 	fmt.Println("Test Successfull!!!!")
-
 	os.Exit(0)
 }
 
@@ -79,7 +80,10 @@ func test() error {
 	url := "http://localhost:8880/hello"
 
 	tr := &http.Transport{
-		TLSClientConfig: &tls.Config{InsecureSkipVerify: true, ServerName: "r.forwarddomain.net"},
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+			ServerName:         "r.forwarddomain.net",
+		},
 	}
 	client := &http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -126,7 +130,6 @@ func test() error {
 		return err
 	}
 	req.Host = "r.forwarddomain.net"
-	req.Header.Add("host", "r.forwarddomain.net")
 	req.Header.Add("accept", "text/plain")
 	req.Header.Add("user-agent", "test")
 
