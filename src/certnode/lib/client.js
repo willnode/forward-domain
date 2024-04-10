@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "util";
-import fromKeyLike from "jose/jwk/from_key_like";
-import generateKeyPair from "jose/util/generate_key_pair";
-import calculateThumbprint from "jose/jwk/thumbprint";
-import SignJWT from "jose/jwt/sign";
-import CompactSign from "jose/jws/compact/sign";
+import { exportJWK } from "jose";
+import { generateKeyPair } from "jose";
+import { calculateJwkThumbprint } from "jose";
+import { SignJWT } from "jose";
+import { CompactSign } from "jose";
 import pem from "pem";
 import * as common from "./common.js";
 import request from "./request.js";
@@ -22,7 +22,7 @@ class Client {
         this.accountPrivateJwk = null;
         /** @type {import('crypto').KeyObject|null} */
         this.accountPrivateKey = null;
-        /** @type {import("jose/types.js").JWK | undefined} */
+        /** @type {import("jose").JWK | undefined} */
         this.accountPublicJwk = undefined;
         /** @type {import('crypto').KeyObject|null} */
         this.accountPublicKey = null;
@@ -241,12 +241,12 @@ class Client {
             return Promise.reject(new Error('Account key pair not generated'));
         }
         const [publicJwk, accountPrivateJwk] = await Promise.all([
-            fromKeyLike(this.accountPublicKey),
-            fromKeyLike(this.accountPrivateKey)
+            exportJWK(this.accountPublicKey),
+            exportJWK(this.accountPrivateKey)
         ]);
         this.accountPublicJwk = publicJwk;
         this.accountPrivateJwk = accountPrivateJwk;
-        this.thumbprint = await calculateThumbprint(publicJwk);
+        this.thumbprint = await calculateJwkThumbprint(publicJwk);
     }
     async newAccount(...emails) {
         const data = await this.sign({
@@ -373,8 +373,8 @@ class Client {
         this.replayNonce = replayNonce;
     }
     /**
-     * @param {import("jose/types.js").JWSHeaderParameters} header
-     * @param {import("jose/types.js").JWTPayload | undefined} [payload]
+     * @param {import("jose").JWSHeaderParameters} header
+     * @param {import("jose").JWTPayload | undefined} [payload]
      */
     async sign(header, payload) {
         if (this.accountPrivateKey == null) {
@@ -383,6 +383,7 @@ class Client {
         let data;
         if (payload) {
             data = await new SignJWT(payload)
+                // @ts-ignore
                 .setProtectedHeader({
                     alg: common.ACCOUNT_KEY_ALGORITHM,
                     ...header

@@ -22,7 +22,7 @@
   "license": "MIT",
   "dependencies": {
     "async-lock": "^1.4.1",
-    "jose": "^3.20.4",
+    "jose": "^5.2.4",
     "pem": "^1.14.8"
   }
 }
