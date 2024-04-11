@@ -1,5 +1,5 @@
 import { client } from "./sni.js";
-import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress, blacklistRedirectUrl } from "./util.js";
+import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress, blacklistRedirectUrl, isExceedLabelLimit, validateCAARecords, isExceedHostLimit } from "./util.js";
 
 /**
  * @typedef {Object} Cache
@@ -19,16 +19,29 @@ const resolveCache = {};
  */
 async function buildCache(host) {
     if (isIpAddress(host)) {
+        // https://community.letsencrypt.org/t/90635/2
         throw new Error('unable to serve with direct IP address');
+    }
+    if (isExceedHostLimit(host)) {
+        // https://stackoverflow.com/q/39035571/3908409
+        throw new Error('Host name is too long (Must no more than 64 char)');
+    }
+    if (isExceedLabelLimit(host)) {
+        // https://community.letsencrypt.org/t/138688/5
+        throw new Error('Host parts is too long (Must less than 10 dots)');
+    }
+    if (validateCAARecords(host)) {
+        // https://community.letsencrypt.org/t/199119/2
+        throw new Error('CAA record is not "letsencrypt.org"');
     }
     let expand = false;
     let recordData = await findTxtRecord(host);
     if (!recordData) {
-        throw new Error(`The record data for "${host}" is missing`);
+        throw new Error(`The TXT record data for "_.${host}" is missing`);
     }
     let { url, httpStatus = '301' } = recordData;
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
-        throw new Error(url + ' in TXT record is not an absolute URL');
+        throw new Error(`The TXT record data for "_.${host}" is not an absolute URL`);
     }
     if (url.endsWith('*')) {
         url = url.slice(0, -1);

@@ -1,9 +1,8 @@
 import request from "./certnode/lib/request.js";
-import crypto from "crypto";
-import fs from "fs";
-import { isIPv4, isIPv6 } from "net";
-import { fileURLToPath } from "url";
-
+import crypto from "node:crypto";
+import fs from "node:fs";
+import { isIPv4, isIPv6 } from "node:net";
+import { fileURLToPath } from "node:url";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 
@@ -72,6 +71,18 @@ export function isHostBlacklisted(domain = '') {
 export function isIpAddress(host) {
     return isIPv4(host) || isIPv6(host)
 }
+/**
+ * @param {string} host
+ */
+export function isExceedLabelLimit(host) {
+    return [...host].filter(x => x === '.').length >= 10
+}
+/**
+ * @param {string} host
+ */
+export function isExceedHostLimit(host) {
+    return host.length <= 64
+}
 
 /**
  * @param {fs.PathLike} dir
@@ -99,6 +110,23 @@ const parseTxtRecordData = (value) => {
         }
     }
     return result;
+}
+
+/**
+ * @param {string} host
+ * @return {Promise<string | null>}
+ */
+export async function validateCAARecords(host) {
+    const resolve = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
+    if (resolve.data.Answer) {
+        for (const head of resolve.data.Answer) {
+            const caaData = head.data;
+            if (typeof caaData === 'string' && caaData !== "0 issue \"letsencrypt.org\"") {
+                return caaData;
+            }
+        }
+    }
+    return null;
 }
 
 /**

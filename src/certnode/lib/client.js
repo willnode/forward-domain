@@ -1,11 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { promisify } from "util";
-import { exportJWK } from "jose";
-import { generateKeyPair } from "jose";
-import { calculateJwkThumbprint } from "jose";
-import { SignJWT } from "jose";
-import { CompactSign } from "jose";
+import { exportJWK, generateKeyPair, calculateJwkThumbprint, SignJWT, CompactSign } from "jose";
 import pem from "pem";
 import * as common from "./common.js";
 import request from "./request.js";
