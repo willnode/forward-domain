@@ -30,7 +30,7 @@ async function buildCache(host) {
         // https://community.letsencrypt.org/t/138688/5
         throw new Error('Host parts is too long (Must less than 10 dots)');
     }
-    if (validateCAARecords(host)) {
+    if (await validateCAARecords(host)) {
         // https://community.letsencrypt.org/t/199119/2
         throw new Error('CAA record is not "letsencrypt.org"');
     }
