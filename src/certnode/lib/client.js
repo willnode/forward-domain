@@ -1,9 +1,13 @@
-import fs from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 import { promisify } from "util";
-import {generateKeyPair,calculateJwkThumbprint, SignJWT, CompactSign, exportJWK } from "jose";
+import { exportJWK } from "jose";
+import { generateKeyPair } from "jose";
+import { calculateJwkThumbprint } from "jose";
+import { SignJWT } from "jose";
+import { CompactSign } from "jose";
 import pem from "pem";
-import common from "./common.js";
+import * as common from "./common.js";
 import request from "./request.js";
 const createCsr = promisify(pem.createCSR);
 /**
@@ -16,11 +20,12 @@ class Client {
      */
     constructor(directoryUrl = common.DIRECTORY_URL) {
         this.accountPrivateJwk = null;
-        /** @type {import('crypto').KeyLike} */
-        this.accountPrivateKey = undefined;
-        this.accountPublicJwk = null;
-        /** @type {import('crypto').KeyLike} */
-        this.accountPublicKey = undefined;
+        /** @type {import('crypto').KeyObject|null} */
+        this.accountPrivateKey = null;
+        /** @type {import("jose").JWK | undefined} */
+        this.accountPublicJwk = undefined;
+        /** @type {import('crypto').KeyObject|null} */
+        this.accountPublicKey = null;
         this.directoryUrl = directoryUrl;
         this.challengeCallbacks = null;
         this.hasDirectory = false;
@@ -40,6 +45,9 @@ class Client {
      * @return {Promise}
      */
     exportAccountKeyPair(dirname, passphrase) {
+        if (this.accountPrivateKey == null || this.accountPublicKey == null) {
+            return Promise.reject(new Error('Account key pair not generated'));
+        }
         const privateKeyFile = path.join(dirname, 'privateKey.pem');
         const publicKeyFile = path.join(dirname, 'publicKey.pem');
         return Promise.all([
@@ -54,7 +62,9 @@ class Client {
      */
     async generateAccountKeyPair() {
         const { privateKey, publicKey } = await generateKeyPair(common.ACCOUNT_KEY_ALGORITHM);
+        // @ts-ignore
         this.accountPrivateKey = privateKey;
+        // @ts-ignore
         this.accountPublicKey = publicKey;
         await this.initAccountJwks();
     }
@@ -97,9 +107,6 @@ class Client {
         this.accountPublicKey = common.importPublicKey(publicKeyData);
         await this.initAccountJwks();
     }
-    /**
-   * @param {string | import("url").URL} authzUrl
-   */
     async authz(authzUrl) {
         const data = await this.sign({
             kid: this.myAccountUrl,
@@ -167,10 +174,13 @@ class Client {
         // @ts-ignore
         const clientKey = common.exportPrivateKey(privateKey);
         let { csr
-        // @ts-ignore
-         } = await createCsr({
+            // @ts-ignore
+        } = await createCsr({
             clientKey,
+            // commonName is deprecated, use altNames
+            // https://github.com/letsencrypt/pebble/issues/233
             commonName: domain,
+            altNames: [domain],
         });
         // "The CSR is sent in the base64url-encoded version of the DER format.
         // (Note: Because this field uses base64url, and does not include headers,
@@ -183,21 +193,39 @@ class Client {
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=/g, '');
-        const data = await this.sign({
-            kid: this.myAccountUrl,
-            nonce: this.replayNonce,
-            url: finalizeUrl
-        }, {
-            csr
-        });
-        const res = await request(finalizeUrl, {
-            method: 'POST',
-            headers: {
-                'content-type': 'application/jose+json'
-            },
-            data
-        });
-        this.setReplayNonce(res);
+
+
+        const sendFinalizeRequest = async (finalizeUrl, payload) => {
+            const data = await this.sign({
+                kid: this.myAccountUrl,
+                nonce: this.replayNonce,
+                url: finalizeUrl
+            }, payload);
+
+            const res = await request(finalizeUrl, {
+                method: 'POST',
+                headers: {
+                    'content-type': 'application/jose+json'
+                },
+                data
+            });
+            this.setReplayNonce(res);
+            return res;
+        }
+        let res = await sendFinalizeRequest(finalizeUrl, { csr });
+        // Let's encrypt actually want this to work!
+        // https://community.letsencrypt.org/t/enabling-asynchronous-order-finalization/193522
+        while (res.data.status === 'processing') {
+            let retryUrl = res.headers.location || '';
+            let retryTime = parseInt(res.headers["retry-after"] || '1') * 1000
+            // sleep, retry
+            await new Promise(resolve => setTimeout(resolve, retryTime))
+            res = await sendFinalizeRequest(retryUrl, "");
+            if (res.data.status == "ready") {
+                res = await sendFinalizeRequest(res.data.finalize, "");
+                break
+            }
+        }
         if (res.statusCode !== 200) {
             throw new Error(`finalizeOrder() Status Code: ${res.statusCode} Data: ${res.data}`);
         }
@@ -206,8 +234,12 @@ class Client {
             certificate,
             privateKeyData: clientKey
         };
+
     }
     async initAccountJwks() {
+        if (this.accountPrivateKey == null || this.accountPublicKey == null) {
+            return Promise.reject(new Error('Account key pair not generated'));
+        }
         const [publicJwk, accountPrivateJwk] = await Promise.all([
             exportJWK(this.accountPublicKey),
             exportJWK(this.accountPrivateKey)
@@ -216,7 +248,7 @@ class Client {
         this.accountPrivateJwk = accountPrivateJwk;
         this.thumbprint = await calculateJwkThumbprint(publicJwk);
     }
-    async newAccount() {
+    async newAccount(...emails) {
         const data = await this.sign({
             jwk: this.accountPublicJwk,
             nonce: this.replayNonce,
@@ -235,7 +267,7 @@ class Client {
         if (![200, 201].includes(res.statusCode)) {
             throw new Error(`newAccount() Status Code: ${res.statusCode} Data: ${res.data}`);
         }
-        this.myAccountUrl = res.headers.location;
+        this.myAccountUrl = res.headers.location || "";
         return res.statusCode === 201;
     }
     async newNonce() {
@@ -250,9 +282,6 @@ class Client {
         this.setReplayNonce(res);
         return true;
     }
-    /**
-   * @param {string[]} domains
-   */
     async newOrder(...domains) {
         const identifiers = domains.map(domain => ({
             type: 'dns',
@@ -285,9 +314,6 @@ class Client {
             orderUrl
         };
     }
-    /**
-   * @param {any} authzUrl
-   */
     async pollAuthz(authzUrl) {
         for (let i = 0; i < 10; i++) {
             const result = await this.authz(authzUrl);
@@ -347,17 +373,21 @@ class Client {
         this.replayNonce = replayNonce;
     }
     /**
-   * @param {any} header
-   * @param {import("jose").JWTPayload | undefined} [payload]
-   */
+     * @param {import("jose").JWSHeaderParameters} header
+     * @param {import("jose").JWTPayload | undefined} [payload]
+     */
     async sign(header, payload) {
+        if (this.accountPrivateKey == null) {
+            return Promise.reject(new Error('Account key pair not generated'));
+        }
         let data;
         if (payload) {
             data = await new SignJWT(payload)
+                // @ts-ignore
                 .setProtectedHeader({
-                alg: common.ACCOUNT_KEY_ALGORITHM,
-                ...header
-            })
+                    alg: common.ACCOUNT_KEY_ALGORITHM,
+                    ...header
+                })
                 .sign(this.accountPrivateKey);
         }
         else {

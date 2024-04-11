@@ -1,5 +1,33 @@
 # CHANGES
 
+## v3.0-beta1 (2024-04-09)
+
+> We're preparing for many breaking changes, stay tuned!
+
++ Add integration tests with [Pebble](https://github.com/letsencrypt/pebble)
+  + Changed few things to make  future Let's Encrypt Happy:
+    + Added [`SubjectAltName`](https://github.com/letsencrypt/pebble/issues/233) in addition to `CommonName` when doing CSR
+    + Added support for [asynchronous Let's Encrypt order flow](https://community.letsencrypt.org/t/193522)
++ Add a domain whitelists mechanism
++ Removed `pm2` and `dotenv` to make CI's installation faster
+  + Please install `pm2` manually if you need that (`npx pm2`)
+  + Please load `.env` manually with `--env-file=.env` (Node >= 20)
++ `index.js` now exports `plainServer` and `secureServer`
+
+## v2.6 (2024-02-06)
+
++ Throw error when directly accessing by IP address
+
+## v2.5 (2023-04-24)
+
++ Add `http-status` TXT record option to set HTTP status code. Contributed by [@dzegarra](https://github.com/willnode/forward-domain/pull/4)
++ Improve lock mechanism when a website is verificating certs.
+
+## v2.4 (2023-04-21)
+
++ Fix global service lock when a website is verificating certs.
++ Update code deps, refactor imports to ESM.
+
 ## v2.3 (2022-08-16)
 
 + Add stat API `s.forwarddomain.net`, separate node script.

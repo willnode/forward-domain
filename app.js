@@ -1,23 +1,7 @@
-// production endpoint (use pm2/phusion/whatever)
+import {plainServer, secureServer} from "./index.js";
 
-require('dotenv').config()
-const https = require("https");
-const app = require("./index.js");
-const listener = require("./src/client.js");
-const { SniPrepare, SniListener } = require("./src/sni.js");
-const port80 = parseInt(process.env.HTTP_PORT || "80");
-const port443 = parseInt(process.env.HTTPS_PORT || "443");
-
-const main = async () => {
-    await SniPrepare();
-    const httpsServer = https.createServer({
-        SNICallback: SniListener,
-    }, listener);
-    httpsServer.listen(port443);
-    app.listen(port80);
-};
-
-main().catch((err) => {
-    console.log(err);
-    process.exit(1);
-});
+const port80 = parseInt(process.env.HTTP_PORT || "8080");
+const port443 = parseInt(process.env.HTTPS_PORT || "8443");
+console.log("Forward Domain running with env", process.env.NODE_ENV);
+plainServer.listen(port80, () => console.log(`HTTP server start at port ${port80}`));
+secureServer.listen(port443, () => console.log(`HTTPS server start at port ${port443}`));

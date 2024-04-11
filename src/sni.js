@@ -1,28 +1,37 @@
-const tls = require('tls');
-const certnode = require('./certnode/lib');
-const fs = require('fs');
-const path = require('path');
-const {
-    md5,
-    ensureDir,
-} = require('./util');
-const {
-    default: AwaitLock
-} = require('await-lock');
+import tls from "tls";
+import { Client, writeKeyToFile } from "./certnode/lib/index.js";
+import fs from "fs";
+import path from "path";
+import { md5, ensureDir, blacklistRedirectUrl, isIpAddress, isHostBlacklisted } from "./util.js";
+import AsyncLock from 'async-lock';
+
+const lock = new AsyncLock();
+// the regex is for Windows shenanigans
+const __dirname = new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:\/)/, '$1');
 const certsDir = path.join(__dirname, '../.certs');
 const accountDir = path.join(__dirname, '../.certs/account');
-const client = new certnode.Client();
+const client = new Client();
 
 /**
- * @type {Object<string, {cert: any, key: any, expire: number}>}
+ * @typedef {Object} Cache
+ * @property {string} cert
+ * @property {string} key
+ * @property {number} expire
+ * 
+ */
+
+/**
+ * @type {Record<string, Cache>}
  */
 const resolveCache = {};
 
+/**
+ * @param {string} host
+ */
 function getCertCachePath(host) {
     const hash = md5(host);
-    return path.join(certsDir, hash.substr(0, 2), hash.substr(2), host);
+    return path.join(certsDir, hash.substring(0, 2), hash.substring(2), host);
 }
-
 /**
  * @param {string} host
  */
@@ -40,82 +49,82 @@ async function buildCache(host) {
         if (Date.now() > expire)
             throw new Error('expired'); // expired
         const cert = await fs.promises.readFile(certP, 'utf8');
-        const key = await fs.promises.readFile(keyP, 'utf8')
+        const key = await fs.promises.readFile(keyP, 'utf8');
         return {
             cert,
             key,
             expire
         };
-    } catch (error) {
-        const {
-            certificate,
-            privateKeyData
-        } = await client.generateCertificate(host);
-        await fs.promises.writeFile(certP, certificate);
-        await certnode.writeKeyToFile(keyP, privateKeyData, '');
-        const expire = (Date.now() + 45 * 86400 * 1000);
-        await fs.promises.writeFile(extP, expire.toString());
-        return {
-            cert: certificate,
-            key: privateKeyData,
-            expire
-        };
     }
+    catch {
+        if ((isHostBlacklisted(host) && !blacklistRedirectUrl) || isIpAddress(host)) {
+            return null;
+        }
 
+        // can only process one certificate generation at a time
+        return await lock.acquire('cert', async () => {
+            const { certificate, privateKeyData } = await client.generateCertificate(host);
+            await fs.promises.writeFile(certP, certificate);
+            await writeKeyToFile(keyP, privateKeyData, '');
+            const expire = (Date.now() + 45 * 86400 * 1000);
+            await fs.promises.writeFile(extP, expire.toString());
+            return {
+                cert: certificate,
+                key: privateKeyData,
+                expire
+            };
+        });
+    }
 }
-
 /**
  * @param {string} servername
  */
 async function getKeyCert(servername) {
-    let cache = resolveCache[servername];
-    await ensureDir(certsDir);
+    servername = servername.toLowerCase();
+    const cache = resolveCache[servername];
     if (!cache || (Date.now() > cache.expire)) {
-        cache = await buildCache(servername);
-        resolveCache[servername] = cache;
+        await ensureDir(certsDir);
+        let cacheNew = await buildCache(servername);
+        if (!cacheNew) {
+            return undefined;
+        }
+        resolveCache[servername] = cacheNew;
+        return {
+            key: cacheNew.key,
+            cert: cacheNew.cert,
+        }
     }
     return {
         key: cache.key,
         cert: cache.cert,
-    }
+    };
 }
-
-let lock = new AwaitLock();
-
 /**
  * @param {string} servername
- * @param {(err: any, cb: tls.SecureContext) => void} ctx
+ * @param {(err: any, cb: tls.SecureContext|undefined) => void} ctx
  */
 async function SniListener(servername, ctx) {
-    // Had to use lock because the best authenticator
-    // library seems don't yet fully stateless.
     // Generate fresh account keys for Let's Encrypt
-    await lock.acquireAsync();
     try {
-        ctx(null, tls.createSecureContext(await getKeyCert(servername)));
-    } catch (error) {
-        console.log(JSON.stringify(error));
-        ctx(error, null);
-    } finally {
-        lock.release();
+        const keyCert = await getKeyCert(servername);
+        ctx(null, keyCert && tls.createSecureContext(keyCert));
+    }
+    catch (error) {
+        console.log(error);
+        ctx(error, undefined);
     }
 }
-
 const SniPrepare = async () => {
     await ensureDir(certsDir);
     await ensureDir(accountDir);
-
     if (fs.existsSync(path.join(accountDir, 'privateKey.pem')) &&
         fs.existsSync(path.join(accountDir, 'publicKey.pem'))) {
         await client.importAccountKeyPair(accountDir, '');
     } else {
+        console.log("Creating new account key pair");
         await client.generateAccountKeyPair();
         await client.exportAccountKeyPair(accountDir, '');
     }
-}
 
-module.exports = {
-    SniListener,
-    SniPrepare,
-    client,
-}
+};
+export { SniListener, SniPrepare, client };

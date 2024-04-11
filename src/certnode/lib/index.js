@@ -1,5 +1,3 @@
-export const Client = require('./client');
-export default {
-    ...require('./common'),
-    Client
-};
+import Client from './client.js';
+export * from './common.js';
+export { Client };

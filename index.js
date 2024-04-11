@@ -1,17 +1,26 @@
+import https from "https";
+import http from "http";
+import listener from "./src/client.js";
+import { SniPrepare, SniListener } from "./src/sni.js";
+import { isMainProcess } from "./src/util.js";
+
 // development endpoint (use ngrok)
+const plainServer = http.createServer(listener);
+const secureServer = https.createServer({
+    SNICallback: SniListener,
+}, listener);
 
-require('dotenv').config()
-const http = require('http');
-const listener = require('./src/client');
+secureServer.on('listening', SniPrepare);
 
-
-const server = http.createServer(listener);
-const port = parseInt(process.env.HTTP_PORT || "3000");
-
-if (require.main === module) {
-    server.listen(port, function () {
-        console.log(`server start at port ${port}`);
+if (isMainProcess(import.meta.url)) {
+    const port = parseInt(process.env.HTTP_PORT || "3000");
+    plainServer.listen(port, function () {
+        console.log(`HTTP server start at port ${port}`);
     });
-} else {
-    module.exports = server
 }
+
+export {
+    plainServer,
+    secureServer
+}
+

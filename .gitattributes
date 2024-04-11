@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+go.mod eol=lf text=auto
+go.sum eol=lf text=auto
+package.json eol=lf text=auto
+*.lockb binary diff=lockb

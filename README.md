@@ -5,14 +5,14 @@
 
 <img src="https://dev-to-uploads.s3.amazonaws.com/uploads/articles/7lp67jpzvabtf8opyzaf.png" alt="Banner" width="600">
 
-> We're back with improvements! See [CHANGES.md](CHANGES.md)
+> For hosting guide See [HOSTING.md](HOSTING.md) and [CHANGES.md](CHANGES.md)
 
-This services forwards domains using 301 HTTP(s) redirects.
+This service forwards domains using HTTP(s) redirects.
 
-Possible scenarios:
+Example scenarios:
 
-+ Forward non-www to www URLs or inversely
-+ Forward old URLs to new URLs
++ Forward non-www to www domains or vice versa
++ Forward old domains to new domains
 
 Why using this service?
 
@@ -22,7 +22,7 @@ Why using this service?
 + Completely anonymous
 + Completely free
 
-How it is possible?
+How does it works?
 
 + Point your domain to us using CNAME or A/AAAA records
 + Tell us where to forward using TXT records
@@ -47,8 +47,16 @@ _.old.com   IN    TXT     forward-domain=https://new.net/*
 
 The star `*` at the end tells us that the remaining URL path is also forwarded to the destination URL.
 
-> If you use Cloudflare or any DNS which supports [CNAME Flattening](https://blog.cloudflare.com/introducing-cname-flattening-rfc-compliant-cnames-at-a-domains-root/), you still can use CNAME records pointing to `r.forwarddomain.net`, it's much recommended to use CNAME records rather than A/AAAA records.
+> If you use Cloudflare or any DNS which supports [CNAME Flattening](https://blog.cloudflare.com/introducing-cname-flattening-rfc-compliant-cnames-at-a-domains-root/), you still can use CNAME records pointing to `r.forwarddomain.net`. It's recommended to use CNAME records rather than A/AAAA records.
 
+You can choose the type of redirection you want to use by declaring the `http-status` value:
+
+```
+www.old.com     IN    CNAME   r.forwarddomain.net
+_.www.old.com   IN    TXT     http-status=302;forward-domain=https://old.com/*
+```
+
+> Only the HTTP status code 301 and 302 are supported. By default it's 301, which is permanent redirection. Set to 302 if you want temporary redirection, it has effect on search engine indexing.
 
 ## FAQ
 

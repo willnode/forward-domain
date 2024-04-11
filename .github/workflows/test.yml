@@ -1,0 +1,25 @@
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: '^1.22.1'
+    - name: Install pebble
+      run: go install github.com/letsencrypt/pebble/v2/cmd/pebble@v2.5.1
+    - name: Install dnsserver
+      run: go install github.com/dlorch/dnsserver@latest
+    - name: Install deps
+      run: npm install 
+    - name: Test
+      run: env PATH=${PATH}:`go env GOPATH`/bin npm test

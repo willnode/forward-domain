@@ -2,24 +2,27 @@
   "name": "forward-domain",
   "version": "1.0.0",
   "description": "Public service to forward domain for free",
-  "main": "index.js",
+  "main": "app.js",
+  "exports": {
+    ".": "./index.js"
+  },
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=16.0.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "pm2 start app.js",
-    "start-proxied": "pm2 start app.js -- 5080 5443",
+    "test": "(cd test && go run .)",
+    "start": "NODE_ENV=production node --env-file=.env app.js",
+    "start-proxied": "node app.js 5080 5443",
     "count": "find .certs -type d | grep '.\\.'  | wc -l"
   },
   "keywords": [],
   "author": "Wildan Mubarok",
   "license": "MIT",
   "dependencies": {
-    "await-lock": "^2.1.0",
-    "axios": "^0.21.1",
-    "dotenv": "^16.0.1",
-    "pem": "^1.14.4"
-    "jose": "^4.14.1",
-  },
-  "devDependencies": {
-    "pm2": "^5.1.1"
+    "async-lock": "^1.4.1",
+    "jose": "^5.2.4",
+    "pem": "^1.14.8"
   }
 }

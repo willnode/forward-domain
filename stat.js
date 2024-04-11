@@ -1,8 +1,6 @@
-// separate stat endpoint
-
-require('dotenv').config()
-const { execSync } = require('child_process');
-const http = require('http');
+import { execSync } from "child_process";
+import http from "http";
+import { isMainProcess } from "./src/util.js";
 
 const updateStat = function () {
     // run npm stat
@@ -12,13 +10,13 @@ const updateStat = function () {
         domains: parseInt(lines[lines.length - 1]),
         iat: Date.now(),
         exp: Date.now() + 1000 * 60 * 60 * 24,
-    }
+    };
     return stat;
-}
+};
 
 let cacheStat = updateStat();
 
-const listener = async function ( /** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
+const listener = async function (/** @type {import('http').IncomingMessage} */ req, /** @type {import('http').ServerResponse} */ res) {
     try {
         // handle CORS
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -29,7 +27,6 @@ const listener = async function ( /** @type {import('http').IncomingMessage} */ 
             res.statusCode = 204;
             return;
         }
-
         switch (req.url) {
             case '/':
                 if (cacheStat.exp < Date.now()) {
@@ -48,21 +45,23 @@ const listener = async function ( /** @type {import('http').IncomingMessage} */ 
                 break;
         }
         return;
-    } catch (error) {
+    }
+    catch (error) {
         res.writeHead(400);
         res.write(error.message || 'Unknown error');
-    } finally {
+    }
+    finally {
         res.end();
     }
-}
+};
 
 const server = http.createServer(listener);
 
-if (require.main === module) {
+if (isMainProcess(import.meta.url)) {
     const port = parseInt(process.env.STAT_PORT || "3000");
     server.listen(port, function () {
         console.log(`server start at port ${port}`);
     });
-} else {
-    module.exports = server
 }
+
+export default server;
