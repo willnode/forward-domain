@@ -81,7 +81,7 @@ export function isExceedLabelLimit(host) {
  * @param {string} host
  */
 export function isExceedHostLimit(host) {
-    return host.length <= 64
+    return host.length > 64
 }
 
 /**
