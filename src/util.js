@@ -120,6 +120,9 @@ export async function validateCAARecords(host) {
     const resolve = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
+            if (head.type !== 257) { // RR type of CAA is 257
+                continue;
+            }
             const caaData = head.data;
             if (typeof caaData === 'string' && caaData !== "0 issue \"letsencrypt.org\"") {
                 return caaData;
@@ -137,6 +140,9 @@ export async function findTxtRecord(host) {
     const resolve = await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (resolve.data.Answer) {
         for (const head of resolve.data.Answer) {
+            if (head.type !== 16) { // RR type of TXT is 16
+                continue;
+            }
             const txtData = parseTxtRecordData(head.data);
             if (!txtData[recordParamDestUrl]) continue;
             return {
