@@ -58,7 +58,7 @@ export function isHostBlacklisted(domain = '') {
         blacklistMap = csvToMap(process.env.BLACKLIST_HOSTS || "");
         blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT || null;
     }
-    
+
     if (whitelistMap === null) {
         return blacklistMap[getCanonDomain(domain)];
     } else {
@@ -118,15 +118,16 @@ const parseTxtRecordData = (value) => {
  */
 export async function validateCAARecords(host) {
     const resolve = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
-    if (resolve.data.Answer) {
-        for (const head of resolve.data.Answer) {
-            if (head.type !== 257) { // RR type of CAA is 257
-                continue;
-            }
-            const caaData = head.data;
-            if (typeof caaData === 'string' && caaData !== "0 issue \"letsencrypt.org\"") {
-                return caaData;
-            }
+    if (!resolve.data.Answer) {
+        return null;
+    }
+    for (const head of resolve.data.Answer) {
+        if (head.type !== 257) { // RR type of CAA is 257
+            continue;
+        }
+        const caaData = head.data;
+        if (typeof caaData === 'string' && caaData !== "0 issue \"letsencrypt.org\"") {
+            return caaData;
         }
     }
     return null;
@@ -138,18 +139,19 @@ export async function validateCAARecords(host) {
  */
 export async function findTxtRecord(host) {
     const resolve = await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
-    if (resolve.data.Answer) {
-        for (const head of resolve.data.Answer) {
-            if (head.type !== 16) { // RR type of TXT is 16
-                continue;
-            }
-            const txtData = parseTxtRecordData(head.data);
-            if (!txtData[recordParamDestUrl]) continue;
-            return {
-                url: txtData[recordParamDestUrl],
-                httpStatus: txtData[recordParamHttpStatus],
-            };
+    if (!resolve.data.Answer) {
+        return null;
+    }
+    for (const head of resolve.data.Answer) {
+        if (head.type !== 16) { // RR type of TXT is 16
+            continue;
         }
+        const txtData = parseTxtRecordData(head.data);
+        if (!txtData[recordParamDestUrl]) continue;
+        return {
+            url: txtData[recordParamDestUrl],
+            httpStatus: txtData[recordParamHttpStatus],
+        };
     }
     return null;
 }
@@ -159,9 +161,10 @@ export async function findTxtRecord(host) {
  * @param {string} relativeURL
  */
 export function combineURLs(baseURL, relativeURL) {
-    return relativeURL
-        ? baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '')
-        : baseURL;
+    if (!relativeURL) {
+        return baseURL;
+    }
+    return baseURL.replace(/\/+$/, '') + '/' + relativeURL.replace(/^\/+/, '');
 }
 
 /**

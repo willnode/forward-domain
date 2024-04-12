@@ -3,10 +3,9 @@ import https from "node:https";
 /**
  * @param {string | URL} url
  * @param {import('https').RequestOptions & {data?: string}} [options]
- * @param {() => void} [cb]
  * @return {Promise<{data: any, headers: import('http').IncomingHttpHeaders, statusCode: number}>}
  */
-const request = (url, { data = '', ...options } = {}, cb) => {
+const request = (url, { data = '', ...options } = {}) => {
     return new Promise((resolve, reject) => {
         try {
             url = new URL(url);
@@ -41,7 +40,6 @@ const request = (url, { data = '', ...options } = {}, cb) => {
             const method = options.method || 'GET';
             reject(new Error(`${method} request to "${url}" timed out`));
         }, 10e3);
-        cb && cb();
     });
 };
 export default request;
