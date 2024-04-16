@@ -114,23 +114,24 @@ const parseTxtRecordData = (value) => {
 
 /**
  * @param {string} host
- * @return {Promise<string | null>}
+ * @return {Promise<string[] | null>}
  */
 export async function validateCAARecords(host) {
     const resolve = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
     if (!resolve.data.Answer) {
         return null;
     }
-    for (const head of resolve.data.Answer) {
-        if (head.type !== 257) { // RR type of CAA is 257
-            continue;
-        }
-        const caaData = head.data;
-        if (typeof caaData === 'string' && caaData !== "0 issue \"letsencrypt.org\"") {
-            return caaData;
-        }
+
+    const issueRecord = data.Answer.filter(x =>
+        x.type == 257 && typeof x.data === 'string' && x.data.startsWith('0 issue ')
+    ).map(x => x.data);
+
+    // check if any record allows Let'sEncrypt (or no record at all)
+    if (issueRecords.length == 0 || issueRecords.some(x => x.includes('letsencrypt.org'))) {
+        return null;
+    } else {
+        return issueRecords;
     }
-    return null;
 }
 
 /**
