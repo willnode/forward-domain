@@ -127,7 +127,8 @@ export async function validateCAARecords(host) {
     ).map(x => x.data);
 
     // check if any record allows Let'sEncrypt (or no record at all)
-    if (issueRecords.length == 0 || issueRecords.some(x => x.includes('letsencrypt.org'))) {
+    const regex = new RegExp('0 issue "?letsencrypt\.org"?');
+    if (issueRecords.length == 0 || issueRecords.some(x => regex.test(x))) {
         return null;
     } else {
         return issueRecords;
