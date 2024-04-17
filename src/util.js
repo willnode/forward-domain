@@ -122,7 +122,7 @@ export async function validateCAARecords(host) {
         return null;
     }
 
-    const issueRecord = data.Answer.filter(x =>
+    const issueRecord = resolve.data.Answer.filter(x =>
         x.type == 257 && typeof x.data === 'string' && x.data.startsWith('0 issue ')
     ).map(x => x.data);
 
