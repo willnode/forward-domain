@@ -30,9 +30,10 @@ async function buildCache(host) {
         // https://community.letsencrypt.org/t/138688/5
         throw new Error('Host parts is too long (Must less than 10 dots)');
     }
-    if (await validateCAARecords(host)) {
+    let caaRecords = await validateCAARecords(host);
+    if (caaRecords) {
         // https://community.letsencrypt.org/t/199119/2
-        throw new Error('CAA record is not "letsencrypt.org"');
+        throw new Error(`CAA record is not "letsencrypt.org". Records found: ${caaRecords}.`);
     }
     let expand = false;
     let recordData = await findTxtRecord(host);
