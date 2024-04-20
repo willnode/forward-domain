@@ -22,9 +22,8 @@
   "license": "MIT",
   "dependencies": {
     "async-lock": "^1.4.1",
+    "better-sqlite3": "^9.5.0",
     "jose": "^5.2.4",
-    "pem": "^1.14.8",
-    "sqlite": "^5.1.1",
-    "sqlite3": "^5.1.7"
+    "pem": "^1.14.8"
   }
 }

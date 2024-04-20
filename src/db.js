@@ -1,6 +1,5 @@
 
-import sqlite3 from "sqlite3";
-import * as sqlite from "sqlite";
+import sqlite from "better-sqlite3";
 import { derToPem } from "./util.js";
 import { X509Certificate, createPrivateKey } from "crypto";
 
@@ -22,55 +21,69 @@ import { X509Certificate, createPrivateKey } from "crypto";
  */
 
 export class CertsDB {
-    constructor() {
-        this.db = null
-    }
     /**
      * @param {string} path
      */
-    async initialize(path) {
-        this.db = await sqlite.open({
-            driver: sqlite3.Database,
-            filename: path,
-        })
+    constructor(path) {
+        const db = sqlite(path);
         // stored as BLOB DER format (fewer bytes), but node need PEM
-        await this.db.run(`CREATE TABLE IF NOT EXISTS certs (
-            domain TEXT UNIQUE,
-            key BLOB,
-            cert BLOB,
-            expire INTEGER
-        )`);
-        await this.db.run(`CREATE TABLE IF NOT EXISTS config (
-            key TEXT PRIMARY KEY,
-            value TEXT
-        )`);
-        await this.db.run(`INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)`,
-            ['version', '3'],
-        )
+        db.prepare(`CREATE TABLE IF NOT EXISTS certs (
+                    domain TEXT UNIQUE,
+                    key BLOB,
+                    cert BLOB,
+                    expire INTEGER
+                )`).run();
+        db.prepare(`CREATE TABLE IF NOT EXISTS config (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                )`).run();
+
+        this.save_cert_stmt = db.prepare(`INSERT OR REPLACE INTO certs (domain, key, cert, expire) VALUES (?, ?, ?, ?)`)
+        this.load_cert_stmt = db.prepare(`SELECT * FROM certs WHERE domain = ?`)
+        this.load_conf_stmt = db.prepare(`SELECT * FROM config`)
+        this.save_conf_stmt = db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`)
+
+        this.db = db;
+        this.config = this.loadConfig();
     }
-    initialized() {
-        return this.db !== null;
+    close() {
+        this.db.close();
+    }
+    loadConfig() {
+        const keys = {};
+        
+        for (const row of this.db.prepare('SELECT * FROM config').all()) {
+            // @ts-ignore
+            keys[row.key] = row.value;
+        }
+        return keys;
+    }
+    getConfig() {
+        return this.config;
+    }
+    /**
+     * @param {string} key
+     * @param {string} value
+     */
+    saveConfig(key, value) {
+        this.config[key] = value;
+        this.save_conf_stmt.run(key, value);
     }
     /**
      * 
      * @param {string} domain 
-     * @returns {Promise<CertRow | undefined>}
+     * @returns {CertRow}
      */
-    async resolveCert(domain) {
-        if (!this.db) {
-            throw new Error("DB is not initialized")
-        }
-        return await this.db.get(`SELECT * FROM certs WHERE domain = ?`, [domain]);
+    resolveCert(domain) {
+        // @ts-ignore
+        return this.load_cert_stmt.get(domain);
     }
     /**
      * @param {string} domain 
-     * @returns {Promise<CertCache>}
+     * @returns {CertCache}
      */
-    async resolveCertAsCache(domain) {
-        if (!this.db) {
-            throw new Error("DB is not initialized")
-        }
-        const row = await this.resolveCert(domain);
+    resolveCertAsCache(domain) {
+        const row = this.resolveCert(domain);
         if (!row) {
             throw new Error("Domain not found")
         }
@@ -85,14 +98,13 @@ export class CertsDB {
      * @param {Buffer} key
      * @param {Buffer} cert
      * @param {number} expire
-     * @returns {Promise<CertRow>}
+     * @returns {CertRow}
      */
-    async saveCert(domain, key, cert, expire) {
-        if (!this.db) {
+    saveCert(domain, key, cert, expire) {
+        if (!this.save_cert_stmt) {
             throw new Error("DB is not initialized")
         }
-        const insertQuery = `INSERT INTO certs (domain, key, cert, expire) VALUES (?, ?, ?, ?)`;
-        await this.db.run(insertQuery, [domain,
+        this.save_cert_stmt.run([domain,
             key,
             cert,
             expire,
@@ -106,16 +118,16 @@ export class CertsDB {
      * @param {string} key
      * @param {string} cert
      */
-    async saveCertFromCache(domain, key, cert) {
+    saveCertFromCache(domain, key, cert) {
         const x509 = new X509Certificate(cert);
-        return await this.saveCert(domain, createPrivateKey({
-                key: key,
-                type: "pkcs8",
-                format: "pem",
-            }).export({
-                format: "der",
-                type: "pkcs8",
-            }),
+        return this.saveCert(domain, createPrivateKey({
+            key: key,
+            type: "pkcs8",
+            format: "pem",
+        }).export({
+            format: "der",
+            type: "pkcs8",
+        }),
             x509.raw,
             Date.parse(x509.validTo),
         )

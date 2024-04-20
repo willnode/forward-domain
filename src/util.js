@@ -124,6 +124,20 @@ export async function ensureDir(dir) {
 }
 
 /**
+ * @param {fs.PathLike} dir
+ */
+export function ensureDirSync(dir) {
+    try {
+        fs.accessSync(dir, fs.constants.W_OK | fs.constants.O_DIRECTORY);
+    }
+    catch (error) {
+        fs.mkdirSync(dir, {
+            recursive: true
+        });
+    }
+}
+
+/**
  * @param {string} value
  */
 const parseTxtRecordData = (value) => {
