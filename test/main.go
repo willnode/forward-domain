@@ -148,5 +148,16 @@ func test() error {
 		return fmt.Errorf("expected header Location to be 'https://forwarddomain.net/hello', got %s", location[0])
 	}
 
+	// second time: check reuse
+	resp, err = client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 302 {
+		return fmt.Errorf("expected status code 302 on reuse, got %d", resp.StatusCode)
+	}
+
 	return nil
 }

@@ -181,6 +181,26 @@ export async function findTxtRecord(host) {
     return null;
 }
 
+
+/**
+ * @param {Buffer} derBuffer
+ * @param {"public"|"private"} type
+ * @returns {string}
+ */
+export function derToPem(derBuffer, type) {
+    const prefix = {
+        'public': 'CERTIFICATE',
+        'private': 'PRIVATE KEY'
+    }[type];
+
+    const header = `-----BEGIN ${prefix}-----\n`;
+    const footer = `-----END ${prefix}-----\n`;
+
+    const base64Content = derBuffer.toString('base64').match(/.{0,64}/g) || [];
+    const pemContent = `${header}${base64Content.join('\n')}${footer}`;
+    return pemContent;
+}
+
 /**
  * @param {string} baseURL
  * @param {string} relativeURL
