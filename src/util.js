@@ -112,20 +112,6 @@ export function isExceedHostLimit(host) {
 /**
  * @param {fs.PathLike} dir
  */
-export async function ensureDir(dir) {
-    try {
-        await fs.promises.access(dir, fs.constants.W_OK | fs.constants.O_DIRECTORY);
-    }
-    catch (error) {
-        await fs.promises.mkdir(dir, {
-            recursive: true
-        });
-    }
-}
-
-/**
- * @param {fs.PathLike} dir
- */
 export function ensureDirSync(dir) {
     try {
         fs.accessSync(dir, fs.constants.W_OK | fs.constants.O_DIRECTORY);
@@ -198,12 +184,13 @@ export async function findTxtRecord(host) {
 
 /**
  * @param {Buffer} derBuffer
- * @param {"public"|"private"} type
+ * @param {"public"|"private"|"certificate"} type
  * @returns {string}
  */
 export function derToPem(derBuffer, type) {
     const prefix = {
-        'public': 'CERTIFICATE',
+        'certificate': 'CERTIFICATE',
+        'public': 'PUBLIC KEY',
         'private': 'PRIVATE KEY'
     }[type];
 

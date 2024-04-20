@@ -35,21 +35,20 @@ class Client {
     /**
      * Export account public and private keys to a directory.
      *
-     * @param  {String} dirname      - name of directory to write key files to
      * @param  {String} [passphrase] - optional passphrase to encrypt private key with
      *
-     * @return {Promise}
+     * @return {{ privateKey: string, publicKey: string }}
      */
-    exportAccountKeyPair(dirname, passphrase) {
+    exportAccountKeyPair(passphrase) {
         if (this.accountPrivateKey == null || this.accountPublicKey == null) {
-            return Promise.reject(new Error('Account key pair not generated'));
+            throw new Error('Account key pair not generated');
         }
-        const privateKeyFile = path.join(dirname, 'privateKey.pem');
-        const publicKeyFile = path.join(dirname, 'publicKey.pem');
-        return Promise.all([
-            common.writeKeyToFile(privateKeyFile, this.accountPrivateKey, passphrase),
-            common.writeKeyToFile(publicKeyFile, this.accountPublicKey)
-        ]);
+        return {
+            // @ts-ignore
+            accountPrivateKey: common.exportPrivateKey(this.accountPrivateKey, passphrase),
+            // @ts-ignore
+            accountPublicKey: common.exportPublicKey(this.accountPublicKey),
+        }
     }
     /**
      * Generate new account public and private keys.
@@ -87,20 +86,15 @@ class Client {
         };
     }
     /**
-     * Import account public and private keys from a directory.
-     *
-     * @param  {String} dirname      - name of directory to read key files from
-     * @param  {String} [passphrase] - optional passphrase to decrypt private key with
-     *
+     * Import account from PEM public and private keys.
+     * @param {string} privateKey
+     * @param {string} publicKey
+     * @param {string | undefined} [passphrase]
      * @return {Promise}
      */
-    async importAccountKeyPair(dirname, passphrase) {
-        const [privateKeyData, publicKeyData] = await Promise.all([
-            fs.promises.readFile(path.join(dirname, 'privateKey.pem'), 'utf8'),
-            fs.promises.readFile(path.join(dirname, 'publicKey.pem'), 'utf8')
-        ]);
-        this.accountPrivateKey = common.importPrivateKey(privateKeyData, passphrase);
-        this.accountPublicKey = common.importPublicKey(publicKeyData);
+    async importAccountKeyPair(privateKey, publicKey, passphrase) {
+        this.accountPrivateKey = common.importPrivateKey(privateKey, passphrase);
+        this.accountPublicKey = common.importPublicKey(publicKey);
         await this.initAccountJwks();
     }
     async authz(authzUrl) {

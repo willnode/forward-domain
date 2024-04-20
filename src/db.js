@@ -5,6 +5,14 @@ import { X509Certificate, createPrivateKey } from "crypto";
 
 
 /**
+ * @typedef {Object} CertConfig
+ * @property {string} version
+ * @property {string} accountPrivateKey PEM
+ * @property {string} accountPublicKey
+ * 
+ */
+
+/**
  * @typedef {Object} CertCache
  * @property {string} cert PEM
  * @property {string} key PEM
@@ -58,6 +66,10 @@ export class CertsDB {
         }
         return keys;
     }
+    /**
+     * 
+     * @returns {Partial<CertConfig>}
+     */
     getConfig() {
         return this.config;
     }
@@ -88,7 +100,7 @@ export class CertsDB {
             throw new Error("Domain not found")
         }
         return {
-            cert: derToPem(row.cert, "public"),
+            cert: derToPem(row.cert, "certificate"),
             key: derToPem(row.key, "private"),
             expire: row.expire,
         };

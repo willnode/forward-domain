@@ -1,8 +1,7 @@
 import tls from "tls";
 import { Client } from "./certnode/lib/index.js";
-import fs from "fs";
 import path from "path";
-import { ensureDir, blacklistRedirectUrl, isIpAddress, isHostBlacklisted, ensureDirSync } from "./util.js";
+import { blacklistRedirectUrl, isIpAddress, isHostBlacklisted, ensureDirSync, derToPem } from "./util.js";
 import AsyncLock from 'async-lock';
 import { CertsDB } from "./db.js";
 
@@ -10,7 +9,6 @@ const lock = new AsyncLock();
 // the regex is for Windows shenanigans
 const __dirname = new URL('.', import.meta.url).pathname.replace(/^\/([A-Z]:\/)/, '$1');
 const certsDir = path.join(__dirname, '../.certs');
-const accountDir = path.join(__dirname, '../.certs/account');
 const dbFile = path.join(__dirname, '../.certs/db.sqlite');
 const client = new Client();
 ensureDirSync(certsDir);
@@ -92,14 +90,19 @@ async function SniListener(servername, ctx) {
 }
 
 const SniPrepare = async () => {
-    await ensureDir(accountDir);
-    if (fs.existsSync(path.join(accountDir, 'privateKey.pem')) &&
-        fs.existsSync(path.join(accountDir, 'publicKey.pem'))) {
-        await client.importAccountKeyPair(accountDir, '');
+    let config = db.getConfig();
+    if (config.accountPrivateKey && config.accountPublicKey) {
+        await client.importAccountKeyPair(
+            config.accountPrivateKey,
+            config.accountPublicKey,
+            '');
     } else {
         console.log("Creating new account key pair");
         await client.generateAccountKeyPair();
-        await client.exportAccountKeyPair(accountDir, '');
+        Object.assign(config, client.exportAccountKeyPair(''));
+        // Note we save this as PEM format cause this isn't BLOB
+        db.saveConfig('accountPublicKey', config.accountPublicKey || '');
+        db.saveConfig('accountPrivateKey', config.accountPrivateKey || '');
     }
 };
 
