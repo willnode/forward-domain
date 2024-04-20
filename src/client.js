@@ -1,5 +1,14 @@
 import { client } from "./sni.js";
-import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress, blacklistRedirectUrl, isExceedLabelLimit, validateCAARecords, isExceedHostLimit } from "./util.js";
+import {
+    findTxtRecord,
+    isHostBlacklisted,
+    combineURLs,
+    isIpAddress,
+    blacklistRedirectUrl,
+    isExceedLabelLimit,
+    validateCAARecords,
+    isExceedHostLimit
+} from "./util.js";
 
 /**
  * @typedef {Object} Cache
@@ -12,7 +21,12 @@ import { findTxtRecord, isHostBlacklisted, combineURLs, isIpAddress, blacklistRe
 /**
  * @type {Record<string, Cache>}
  */
-const resolveCache = {};
+let resolveCache = {};
+
+function pruneCache() {
+    resolveCache = {};
+}
+
 /**
  * @param {string} host
  * @returns {Promise<Cache>}
@@ -59,7 +73,9 @@ async function buildCache(host) {
         httpStatus: parseInt(httpStatus),
     };
 }
+
 const acme_prefix = '/.well-known/acme-challenge/';
+
 /**
  * @type {import('http').RequestListener}
  */
@@ -115,4 +131,8 @@ const listener = async function (req, res) {
         res.end();
     }
 };
-export default listener;
+
+export {
+    listener,
+    pruneCache,
+}

@@ -2,11 +2,9 @@ import tls from "tls";
 import { Client } from "./certnode/lib/index.js";
 import fs from "fs";
 import path from "path";
-import { ensureDir, blacklistRedirectUrl, isIpAddress, isHostBlacklisted, derToPem } from "./util.js";
+import { ensureDir, blacklistRedirectUrl, isIpAddress, isHostBlacklisted } from "./util.js";
 import AsyncLock from 'async-lock';
-import sqlite3 from "sqlite3";
-import * as sqlite from "sqlite";
-import { X509Certificate, createPrivateKey } from "crypto";
+import { CertsDB } from "./db.js";
 
 const lock = new AsyncLock();
 // the regex is for Windows shenanigans
@@ -15,40 +13,27 @@ const certsDir = path.join(__dirname, '../.certs');
 const accountDir = path.join(__dirname, '../.certs/account');
 const dbDir = path.join(__dirname, '../.certs/db.sqlite');
 const client = new Client();
-/**
- * @type {sqlite.Database<sqlite3.Database, sqlite3.Statement>}
- */
-let db;
+const db = new CertsDB();
 
 /**
- * @typedef {Object} Cache
- * @property {string} cert
- * @property {string} key
- * @property {number} expire
- * 
+ * @type {Record<string, import("./db.js").CertCache>}
  */
+let resolveCache = {};
 
-/**
- * @type {Record<string, Cache>}
- */
-const resolveCache = {};
+function pruneCache() {
+    resolveCache = {};
+}
 
 /**
  * @param {string} host
+ * @returns {Promise<import("./db.js").CertCache | null>}
  */
 async function buildCache(host) {
-    if (!db) {
-        throw new Error("db is not initialized");
-    }
     try {
-        let data = await db.get(`SELECT * FROM certs WHERE domain = ?`, [host]);
-        if (Date.now() > data.expirationDate)
-            throw new Error('expired'); // expired
-        return {
-            cert: derToPem(data.publicKey, "public"),
-            key: derToPem(data.privateKey, "private"),
-            expire: data.expirationDate,
-        };
+        let data = await db.resolveCertAsCache(host);
+        if (Date.now() > data.expire)
+            throw new Error('expired');
+        return data;
     }
     catch {
         if ((isHostBlacklisted(host) && !blacklistRedirectUrl) || isIpAddress(host)) {
@@ -57,25 +42,12 @@ async function buildCache(host) {
 
         // can only process one certificate generation at a time
         return await lock.acquire('cert', async () => {
-            const insertQuery = `INSERT INTO certs (domain, privateKey, publicKey, expirationDate) VALUES (?, ?, ?, ?)`;
-            const { certificate, privateKeyData } = await client.generateCertificate(host);
-            const expire = Date.now() + 45 * 86400 * 1000;
-            await db.run(insertQuery, [host,
-                createPrivateKey({
-                    key: privateKeyData,
-                    type: "pkcs8",
-                    format: "pem",
-                }).export({
-                    format: "der",
-                    type: "pkcs8",
-                }),
-                new X509Certificate(certificate).raw,
-                expire,
-            ]);
+            const { cert, key } = await client.generateCertificate(host);
+            const { expire } = await db.saveCertFromCache(host, key, cert);
             return {
-                cert: certificate,
-                key: privateKeyData,
-                expire
+                cert,
+                key,
+                expire,
             };
         });
     }
@@ -118,6 +90,7 @@ async function SniListener(servername, ctx) {
         ctx(error, undefined);
     }
 }
+
 const SniPrepare = async () => {
     await ensureDir(certsDir);
     await ensureDir(accountDir);
@@ -129,23 +102,12 @@ const SniPrepare = async () => {
         await client.generateAccountKeyPair();
         await client.exportAccountKeyPair(accountDir, '');
     }
-    db = await sqlite.open({
-        driver: sqlite3.Database,
-        filename: dbDir,
-    })
-    // stored as BLOB DER format (fewer bytes), but node need PEM
-    await db.run(`CREATE TABLE IF NOT EXISTS certs (
-        domain TEXT UNIQUE,
-        privateKey BLOB,
-        publicKey BLOB,
-        expirationDate INTEGER
-    )`);
-    await db.run(`CREATE TABLE IF NOT EXISTS config (
-        key TEXT PRIMARY KEY,
-        value TEXT
-    )`);
-    await db.run(`INSERT OR IGNORE INTO config (key, value) VALUES (?, ?)`,
-        ['version', '1'],
-    )
+    await db.initialize(dbDir)
 };
-export { SniListener, SniPrepare, client };
+
+export {
+    SniListener,
+    SniPrepare,
+    pruneCache,
+    client,
+};

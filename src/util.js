@@ -29,12 +29,12 @@ export function md5(str) {
 function findDotPositions(str) {
     let dotPositions = [];
     let index = str.indexOf('.');
-    
+
     while (index !== -1) {
         dotPositions.push(index);
         index = str.indexOf('.', index + 1);
     }
-    
+
     return dotPositions;
 }
 
@@ -62,10 +62,10 @@ export function isHostBlacklisted(domain = '') {
         blacklistMap = csvToMap(process.env.BLACKLIST_HOSTS || "");
         blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT || null;
     }
-    const hostSplitted = domain.split('.');
+    const labelPositions = findDotPositions(domain);
     if (whitelistMap === null) {
-        for (let i = hostSplitted.length; i-- > 0;) {
-            let val = blacklistMap[hostSplitted.slice(i).join('.')]
+        for (let i = labelPositions.length; i-- > 0;) {
+            let val = blacklistMap[domain.slice(labelPositions[i])]
             if (val === false) {
                 continue;
             } else if (val === true) {
@@ -76,8 +76,8 @@ export function isHostBlacklisted(domain = '') {
         }
         return false;
     } else {
-        for (let i = hostSplitted.length; i-- > 0;) {
-            let val = whitelistMap[hostSplitted.slice(i).join('.')]
+        for (let i = labelPositions.length; i-- > 0;) {
+            let val = whitelistMap[domain.slice(labelPositions[i])]
             if (val === false) {
                 continue;
             } else if (val === true) {

@@ -69,7 +69,7 @@ class Client {
      *
      * @param  {String} domain - the domain you want a certificate for
      *
-     * @return {Promise}
+     * @return {Promise<{cert: string, key: string}>}
      */
     async generateCertificate(domain) {
         await this.directory();
@@ -82,8 +82,8 @@ class Client {
         await this.pollAuthz(authzUrls[0]);
         const { certificate, privateKeyData } = await this.finalizeOrder(finalizeUrl, domain);
         return {
-            certificate,
-            privateKeyData
+            cert: certificate,
+            key: privateKeyData
         };
     }
     /**

@@ -1,6 +1,6 @@
 import https from "https";
 import http from "http";
-import listener from "./src/client.js";
+import { listener } from "./src/client.js";
 import { SniPrepare, SniListener } from "./src/sni.js";
 import { isMainProcess } from "./src/util.js";
 
