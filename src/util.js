@@ -5,6 +5,7 @@ import { isIPv4, isIPv6 } from "node:net";
 import { fileURLToPath } from "node:url";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
+const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
 
 let blacklistMap = null;
 let whitelistMap = null;
@@ -127,12 +128,10 @@ export async function validateCAARecords(host) {
     ).map(x => x.data);
 
     // check if any record allows Let'sEncrypt (or no record at all)
-    const regex = new RegExp('0 issue "?letsencrypt\.org"?');
-    if (issueRecords.length == 0 || issueRecords.some(x => regex.test(x))) {
+    if (issueRecords.length == 0 || issueRecords.some(x => caaRegex.test(x))) {
         return null;
-    } else {
-        return issueRecords;
     }
+    return issueRecords;
 }
 
 /**
