@@ -49,6 +49,7 @@ export class CertsDB {
 
         this.save_cert_stmt = db.prepare(`INSERT OR REPLACE INTO certs (domain, key, cert, expire) VALUES (?, ?, ?, ?)`)
         this.load_cert_stmt = db.prepare(`SELECT * FROM certs WHERE domain = ?`)
+        this.count_cert_stmt = db.prepare(`SELECT COUNT(*) as domains FROM certs`)
         this.load_conf_stmt = db.prepare(`SELECT * FROM config`)
         this.save_conf_stmt = db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`)
 
@@ -96,6 +97,14 @@ export class CertsDB {
     resolveCert(domain) {
         // @ts-ignore
         return this.load_cert_stmt.get(domain);
+    }
+    /**
+     * 
+     * @returns {number}
+     */
+    countCert() {
+        // @ts-ignore
+        return this.count_cert_stmt.get().domains;
     }
     /**
      * @param {string} domain 

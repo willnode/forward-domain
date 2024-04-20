@@ -1,4 +1,4 @@
-import { client } from "./sni.js";
+import { client, getStat } from "./sni.js";
 import {
     findTxtRecord,
     isHostBlacklisted,
@@ -100,6 +100,28 @@ const listener = async function (req, res) {
             res.writeHead(400);
             res.write('Host header is required');
             return;
+        }
+        if (host === process.env.HOME_DOMAIN) {
+            // handle CORS
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+            res.setHeader('Access-Control-Max-Age', '86400');
+            if (req.method === 'OPTIONS') {
+                res.statusCode = 204;
+                return;
+            }
+
+            switch (url) {
+                case '/stat':
+                    res.writeHead(200, { 'Content-Type': 'application/json' });
+                    res.write(JSON.stringify(getStat()));
+                    return;
+                case '/health':
+                    res.writeHead(200, { 'Content-Type': 'plain/text' });
+                    res.write("ok");
+                    return;
+            }
         }
         let cache = resolveCache[host];
         if (!cache || (Date.now() > cache.expire)) {

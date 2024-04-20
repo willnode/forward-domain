@@ -19,8 +19,26 @@ const db = new CertsDB(dbFile);
  */
 let resolveCache = {};
 
+
+/**
+ * @type {{domains: number, iat: number, exp: number}}
+ */
+let statCache;
+
 function pruneCache() {
     resolveCache = {};
+}
+
+function getStat() {
+    if (statCache && statCache.exp > Date.now()) {
+        return statCache;
+    }
+    statCache = {
+        domains: db.countCert(),
+        iat: Date.now(),
+        exp: Date.now() + 1000 * 60 * 60 * 24,
+    };
+    return statCache;
 }
 
 /**
@@ -115,5 +133,6 @@ export {
     SniPrepare,
     SniDispose,
     pruneCache,
+    getStat,
     client,
 };
