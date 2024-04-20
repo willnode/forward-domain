@@ -2,7 +2,8 @@
 import sqlite from "better-sqlite3";
 import { derToPem } from "./util.js";
 import { X509Certificate, createPrivateKey } from "node:crypto";
-
+import { migrateFromV2 } from "./tools/migrate.js";
+import { dirname } from "node:path";
 
 /**
  * @typedef {Object} CertConfig
@@ -53,13 +54,19 @@ export class CertsDB {
 
         this.db = db;
         this.config = this.loadConfig();
+
+        if (!this.config.version) {
+            migrateFromV2(dirname(path), this);
+            this.config.version = '3';
+            this.saveConfig('version', this.config.version);
+        }
     }
     close() {
         this.db.close();
     }
     loadConfig() {
         const keys = {};
-        
+
         for (const row of this.db.prepare('SELECT * FROM config').all()) {
             // @ts-ignore
             keys[row.key] = row.value;
