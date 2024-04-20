@@ -1,7 +1,7 @@
 
 import sqlite from "better-sqlite3";
 import { derToPem } from "./util.js";
-import { X509Certificate, createPrivateKey } from "crypto";
+import { X509Certificate, createPrivateKey } from "node:crypto";
 
 
 /**

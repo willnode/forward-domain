@@ -135,4 +135,5 @@ const listener = async function (req, res) {
 export {
     listener,
     pruneCache,
+    buildCache,
 }

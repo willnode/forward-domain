@@ -16,22 +16,15 @@ let whitelistMap = null;
 export let blacklistRedirectUrl = null;
 
 /**
- * @param {crypto.BinaryLike} str
- */
-export function md5(str) {
-    return crypto.createHash('md5').update(str).digest('hex');
-}
-
-/**
  * @param {string} str
  * @return {Array<number>}
  */
 function findDotPositions(str) {
-    let dotPositions = [];
+    let dotPositions = [0];
     let index = str.indexOf('.');
 
     while (index !== -1) {
-        dotPositions.push(index);
+        dotPositions.push(index + 1);
         index = str.indexOf('.', index + 1);
     }
 
@@ -54,13 +47,17 @@ function csvToMap(str) {
     }, {})
 }
 
-export function isHostBlacklisted(domain = '') {
-    if (blacklistMap === null) {
-        if (process.env.WHITELIST_HOSTS) {
-            whitelistMap = csvToMap(process.env.WHITELIST_HOSTS || "");
+/**
+ * @param {Record<string, string>} [mockEnv]
+ */
+export function isHostBlacklisted(domain = '', mockEnv = undefined) {
+    if (blacklistMap === null || mockEnv) {
+        let env = mockEnv || process.env;
+        if (env.WHITELIST_HOSTS) {
+            whitelistMap = csvToMap(env.WHITELIST_HOSTS || "");
         }
-        blacklistMap = csvToMap(process.env.BLACKLIST_HOSTS || "");
-        blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT || null;
+        blacklistMap = csvToMap(env.BLACKLIST_HOSTS || "");
+        blacklistRedirectUrl = env.BLACKLIST_REDIRECT || null;
     }
     const labelPositions = findDotPositions(domain);
     if (whitelistMap === null) {
@@ -139,10 +136,11 @@ const parseTxtRecordData = (value) => {
 
 /**
  * @param {string} host
+ * @param {any} mockResolve
  * @return {Promise<string[] | null>}
  */
-export async function validateCAARecords(host) {
-    const resolve = await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
+export async function validateCAARecords(host, mockResolve = undefined) {
+    const resolve = mockResolve || await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
     if (!resolve.data.Answer) {
         return null;
     }
@@ -160,10 +158,11 @@ export async function validateCAARecords(host) {
 
 /**
  * @param {string} host
+ * @param {any} mockResolve
  * @return {Promise<{url: string, httpStatus?: string} | null>}
  */
-export async function findTxtRecord(host) {
-    const resolve = await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
+export async function findTxtRecord(host, mockResolve = undefined) {
+    const resolve = mockResolve || await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
     if (!resolve.data.Answer) {
         return null;
     }
