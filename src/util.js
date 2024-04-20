@@ -24,31 +24,34 @@ export function md5(str) {
 
 /**
  * @param {string} str
- * @return {Record<string, true>}
+ * @return {Array<number>}
+ */
+function findDotPositions(str) {
+    let dotPositions = [];
+    let index = str.indexOf('.');
+    
+    while (index !== -1) {
+        dotPositions.push(index);
+        index = str.indexOf('.', index + 1);
+    }
+    
+    return dotPositions;
+}
+
+
+/**
+ * @param {string} str
+ * @return {Record<string, boolean>}
  */
 function csvToMap(str) {
     return (str || "").split(',').reduce((acc, host) => {
-        acc[host.toLowerCase()] = true;
+        host = host.trim().toLowerCase();
+        const labelPositions = findDotPositions(host);
+        for (let i = labelPositions.length; i-- > 0;) {
+            acc[host.slice(labelPositions[i])] = i == 0
+        }
         return acc;
     }, {})
-}
-
-/**
- * @param {string} domain
- * @return {string}
- */
-function getCanonDomain(domain) {
-    // TODO: This is a wild approximation to get 
-    // "example.com" out of "subdomain.example.com"
-    // should use PSL for accuracy but I don't want to 
-    // compromise performance here
-    if (domain.length > 6) {
-        let p = domain.lastIndexOf('.', domain.length - 6);
-        if (p > 0) {
-            domain = domain.substring(p + 1);
-        }
-    }
-    return domain;
 }
 
 export function isHostBlacklisted(domain = '') {
@@ -59,13 +62,34 @@ export function isHostBlacklisted(domain = '') {
         blacklistMap = csvToMap(process.env.BLACKLIST_HOSTS || "");
         blacklistRedirectUrl = process.env.BLACKLIST_REDIRECT || null;
     }
-
+    const hostSplitted = domain.split('.');
     if (whitelistMap === null) {
-        return blacklistMap[getCanonDomain(domain)];
+        for (let i = hostSplitted.length; i-- > 0;) {
+            let val = blacklistMap[hostSplitted.slice(i).join('.')]
+            if (val === false) {
+                continue;
+            } else if (val === true) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
     } else {
-        return !whitelistMap[getCanonDomain(domain)];
+        for (let i = hostSplitted.length; i-- > 0;) {
+            let val = whitelistMap[hostSplitted.slice(i).join('.')]
+            if (val === false) {
+                continue;
+            } else if (val === true) {
+                return false;
+            } else {
+                return true;
+            }
+        }
+        return true;
     }
 }
+
 /**
  * @param {string} host
  */
