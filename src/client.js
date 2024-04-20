@@ -118,7 +118,7 @@ const listener = async function (req, res) {
                     res.write(JSON.stringify(getStat()));
                     return;
                 case '/health':
-                    res.writeHead(200, { 'Content-Type': 'plain/text' });
+                    res.writeHead(200, { 'Content-Type': 'text/plain' });
                     res.write("ok");
                     return;
             }

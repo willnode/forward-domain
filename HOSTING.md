@@ -7,8 +7,7 @@ This guide will walk you through the process of setting up your own instance of 
 - `node` LTS node (20.x or higher)
 - `openssl` required for signing certs
 - `go` (>= 1.22) and `bun` (>= 1.1) for running tests
-- `find`, `grep`, `wc` (linux standard tools) for running stats
-- A machine with public IP address installed
+- A server with public IP address installed
 
 ## Installation
 
@@ -25,10 +24,10 @@ This guide will walk you through the process of setting up your own instance of 
 | --- | --- |
 `HTTP_PORT` | The port to listen for HTTP requests
 `HTTPS_PORT` | The port to listen for HTTPS requests
-`STAT_PORT` | The port to listen for getting API metrics
 `WHITELIST_HOSTS` | A comma-separated list of root domains to whitelist
 `BLACKLIST_HOSTS` | A comma-separated list of root domains to blacklist
 `BLACKLIST_REDIRECT` | The URL to redirect to when a blacklisted host is accessed
+`HOME_DOMAIN` | The host to enable `/stat` endpoint
 `OPENSSL_BIN` | (used by `pem` package) Path to `openssl` to override from PATH
 
 If `WHITELIST_HOSTS` is set, `BLACKLIST_HOSTS` is ignored. Both is mutually exclusive.
@@ -61,7 +60,7 @@ This configuration below, setups the following:
 + Port `80` is listened by `http` block, with default site forwards connection to port `5080`.
 + Port `443` is listened by `stream` block, with default stream forwards connection to port `5443`.
 + All normal HTTPS connection in `http` block listen to `6443`, to be cached by some domains in `stream` block.
-+ Port `5080` and `5443` and `5900` for http, https and stat is set for `forward-domain` service listened to.
++ Port `5080` and `5443` for http, https is set for `forward-domain` service listened to.
 
 
 ```nginx
@@ -84,7 +83,7 @@ stream {
     }
 
     map $ssl_preread_server_name $upstream {
-        s.forwarddomain.net main;
+        forwarddomain.net main;
         default forwarder;
     }
 
@@ -108,7 +107,7 @@ http {
     }
         
     server {
-        server_name s.forwarddomain.net;
+        server_name forwarddomain.net;
         listen 167.172.5.31;
         listen [2400:6180:0:d0::e08:a001];
         location / {
@@ -117,8 +116,8 @@ http {
         }
         listen 167.172.5.31:6443 ssl;
         listen [2400:6180:0:d0::e08:a001]:6443 ssl;
-        ssl_certificate /home/s/ssl.combined;
-        ssl_certificate_key /home/s/ssl.key;
+        ssl_certificate /home/web/ssl.combined;
+        ssl_certificate_key /home/web/ssl.key;
     }
 }
 ```
