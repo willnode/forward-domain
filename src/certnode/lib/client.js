@@ -1,11 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
-import { promisify } from "util";
+import rsacsr from "rsa-csr";
 import { exportJWK, generateKeyPair, calculateJwkThumbprint, SignJWT, CompactSign } from "jose";
-import pem from "pem";
 import * as common from "./common.js";
 import request from "./request.js";
-const createCsr = promisify(pem.createCSR);
+import { generateCSR } from "./csr.js";
 /**
  * Represents a Let's Encrypt account and
  * sends requests to get valid TLS certificates.
@@ -159,19 +156,17 @@ class Client {
         }
         return res.data;
     }
+    
     async finalizeOrder(finalizeUrl, domain) {
         const { privateKey } = await generateKeyPair(common.CERTIFICATE_KEY_ALGORITHM);
         // @ts-ignore
-        const clientKey = common.exportPrivateKey(privateKey);
-        let { csr
-            // @ts-ignore
-        } = await createCsr({
-            clientKey,
-            // commonName is deprecated, use altNames
-            // https://github.com/letsencrypt/pebble/issues/233
-            commonName: domain,
-            altNames: [domain],
+        const privateKeyData = common.exportPrivateKey(privateKey);
+        
+        let csr = await rsacsr({
+            key: await exportJWK(privateKey),
+            domains: [domain],
         });
+
         // "The CSR is sent in the base64url-encoded version of the DER format.
         // (Note: Because this field uses base64url, and does not include headers,
         // it is different from PEM.)"
@@ -183,7 +178,6 @@ class Client {
             .replace(/\+/g, '-')
             .replace(/\//g, '_')
             .replace(/=/g, '');
-
 
         const sendFinalizeRequest = async (finalizeUrl, payload) => {
             const data = await this.sign({
@@ -222,7 +216,7 @@ class Client {
         const certificate = await this.fetchCertificate(res.data.certificate);
         return {
             certificate,
-            privateKeyData: clientKey
+            privateKeyData
         };
 
     }

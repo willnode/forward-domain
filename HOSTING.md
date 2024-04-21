@@ -5,7 +5,6 @@ This guide will walk you through the process of setting up your own instance of 
 ## Prerequisites
 
 - `node` LTS node (20.x or higher)
-- `openssl` required for signing certs
 - `go` (>= 1.22) and `bun` (>= 1.1) for running tests
 - A server with public IP address installed
 
