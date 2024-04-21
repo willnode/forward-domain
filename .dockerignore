@@ -1,0 +1,27 @@
+# General
+**/.DS_Store
+**/*.md
+**/LICENSE
+
+# Git
+**/.git
+**/.github
+**/.gitattributes
+**/.gitignore
+
+# Docker
+**/.dockerignore
+**/Dockerfile
+
+# Node
+**/node_modules/
+**/dist
+**/npm-debug.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Generated certs
+.certs/
