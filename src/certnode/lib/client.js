@@ -2,7 +2,6 @@ import rsacsr from "rsa-csr";
 import { exportJWK, generateKeyPair, calculateJwkThumbprint, SignJWT, CompactSign } from "jose";
 import * as common from "./common.js";
 import request from "./request.js";
-import { generateCSR } from "./csr.js";
 /**
  * Represents a Let's Encrypt account and
  * sends requests to get valid TLS certificates.
