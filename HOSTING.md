@@ -27,7 +27,6 @@ This guide will walk you through the process of setting up your own instance of 
 `BLACKLIST_HOSTS` | A comma-separated list of root domains to blacklist
 `BLACKLIST_REDIRECT` | The URL to redirect to when a blacklisted host is accessed
 `HOME_DOMAIN` | The host to enable `/stat` endpoint
-`OPENSSL_BIN` | (used by `pem` package) Path to `openssl` to override from PATH
 
 If `WHITELIST_HOSTS` is set, `BLACKLIST_HOSTS` is ignored. Both is mutually exclusive.
 
