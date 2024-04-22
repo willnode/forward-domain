@@ -1,34 +1,40 @@
+---
+name: Test
 
-on:
+on:  # yamllint disable-line rule:truthy
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - main
   push:
     branches:
       - main
 
 jobs:
   test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
-    - name: Set up Bun
-      uses: oven-sh/setup-bun@v1
-      with:
-        bun-version: '1.1.2'
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: '1.22.1'
-    - name: Install pebble
-      run: go install github.com/letsencrypt/pebble/v2/cmd/pebble@v2.5.1
-    - name: Install dnsserver
-      run: go install github.com/dlorch/dnsserver@latest
-    - name: Install deps
-      run: npm install 
-    - name: Unit Test
-      run: bun test
-    - name: Integrated Test
-      run: env PATH=${PATH}:`go env GOPATH`/bin npm test
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: '1.1.2'
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.22.1'
+      - name: Install pebble
+        run: go install github.com/letsencrypt/pebble/v2/cmd/pebble@v2.5.1
+      - name: Install dnsserver
+        run: go install github.com/dlorch/dnsserver@latest
+      - name: Install deps
+        run: npm install
+      - name: Unit Test
+        run: bun test
+      - name: Integrated Test
+        run: env PATH=${PATH}:`go env GOPATH`/bin npm test
