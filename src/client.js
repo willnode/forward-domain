@@ -144,7 +144,8 @@ const listener = async function (req, res) {
         });
         return;
     }
-    catch (error) {
+
+    catch (/** @type {any} */ error) {
         const message = error?.message;
         res.writeHead(message ? 400 : 500);
         res.write(message || 'Unknown error');

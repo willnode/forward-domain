@@ -7,8 +7,21 @@ const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
 
+/**
+ * @type {Record<string, boolean> | null}
+ */
 let blacklistMap = null;
+/**
+ * @type {Record<string, boolean> | null}
+ */
 let whitelistMap = null;
+
+/**
+ * @returns {Record<string, any>}
+ */
+export function initMap() {
+    return {}
+}
 
 /**
  * @type {string?}
@@ -44,7 +57,7 @@ function csvToMap(str) {
             acc[host.slice(labelPositions[i])] = i == 0
         }
         return acc;
-    }, {})
+    }, initMap())
 }
 
 /**
@@ -124,6 +137,9 @@ export function ensureDirSync(dir) {
  * @param {string} value
  */
 const parseTxtRecordData = (value) => {
+    /**
+     * @type {Record<string, string>}
+     */
     const result = {};
     for (const part of value.split(';')) {
         const [key, ...value] = part.split('=');
@@ -140,12 +156,15 @@ const parseTxtRecordData = (value) => {
  * @return {Promise<string[] | null>}
  */
 export async function validateCAARecords(host, mockResolve = undefined) {
+    /**
+     * @type {{data: {Answer: {data: string, type: number}[]}}}
+     */
     const resolve = mockResolve || await request(`https://dns.google/resolve?name=${encodeURIComponent(host)}&type=CAA`);
     if (!resolve.data.Answer) {
         return null;
     }
 
-    const issueRecords = resolve.data.Answer.filter(x =>
+    const issueRecords = resolve.data.Answer.filter((x) =>
         x.type == 257 && typeof x.data === 'string' && x.data.startsWith('0 issue ')
     ).map(x => x.data);
 

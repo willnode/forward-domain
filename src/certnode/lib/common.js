@@ -6,7 +6,7 @@ export const DIRECTORY_URL = {
     'production': 'https://acme-v02.api.letsencrypt.org/directory',
     'development': 'https://acme-staging-v02.api.letsencrypt.org/directory',
     'test': 'https://localhost:14000/dir',
-}[(process.env.NODE_ENV || 'development').trim().toLowerCase()]
+}[(process.env.NODE_ENV || 'development').trim().toLowerCase()] || ""
 export const PRIVATE_KEY_CIPHER = 'aes-256-cbc';
 export const PRIVATE_KEY_FORMAT = 'pem';
 export const PRIVATE_KEY_PERMISSIONS = 0o600;
@@ -17,7 +17,7 @@ export const PUBLIC_KEY_TYPE = 'spki';
 /**
  * @param  {crypto.KeyObject} privateKey
  * @param  {String}           [passphrase]
- *
+ * @returns {string}
  */
 export const exportPrivateKey = (privateKey, passphrase) => {
     /** @type {crypto.KeyExportOptions<'pem'>} */
@@ -29,13 +29,16 @@ export const exportPrivateKey = (privateKey, passphrase) => {
         privateKeyOpts.cipher = PRIVATE_KEY_CIPHER;
         privateKeyOpts.passphrase = passphrase;
     }
+    // @ts-ignore
     return privateKey.export(privateKeyOpts);
 };
 /**
  * @param  {crypto.KeyObject} publicKey
+ * @returns {string}
  */
 export const exportPublicKey = publicKey => {
     /** @type {crypto.KeyExportOptions<'pem'>} */
+    // @ts-ignore
     return publicKey.export({
         type: PUBLIC_KEY_TYPE,
         format: PUBLIC_KEY_FORMAT
@@ -86,7 +89,7 @@ export const importPublicKey = publicKeyData => {
  * @param  {crypto.KeyObject|string} key
  * @param  {String}                    [passphrase]
  *
- * @return {Promise}
+ * @return {Promise<void>}
  */
 export const writeKeyToFile = async (filename, key, passphrase) => {
     if (typeof key === 'string') {

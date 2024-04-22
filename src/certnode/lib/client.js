@@ -49,7 +49,7 @@ class Client {
     /**
      * Generate new account public and private keys.
      *
-     * @return {Promise}
+     * @return {Promise<void>}
      */
     async generateAccountKeyPair() {
         const { privateKey, publicKey } = await generateKeyPair(common.ACCOUNT_KEY_ALGORITHM);
@@ -86,19 +86,23 @@ class Client {
      * @param {string} privateKey
      * @param {string} publicKey
      * @param {string | undefined} [passphrase]
-     * @return {Promise}
+     * @return {Promise<void>}
      */
     async importAccountKeyPair(privateKey, publicKey, passphrase) {
         this.accountPrivateKey = common.importPrivateKey(privateKey, passphrase);
         this.accountPublicKey = common.importPublicKey(publicKey);
         await this.initAccountJwks();
     }
+    /**
+     * @param {string | URL} authzUrl
+     */
     async authz(authzUrl) {
         const data = await this.sign({
             kid: this.myAccountUrl,
             nonce: this.replayNonce,
             url: authzUrl
         });
+        /** @type {import("./request.js").Response<{challenges: {type: string}[], identifier: {value: string}, status: string}>} */
         const res = await request(authzUrl, {
             method: 'POST',
             headers: {
@@ -118,6 +122,10 @@ class Client {
             ...rest
         };
     }
+    /**
+     * @param {any} challenge
+     * @param {string} domain
+     */
     async completeChallenge(challenge, domain) {
         await this.readyChallenge(challenge);
         await this.receiveServerRequest(challenge, domain);
@@ -135,6 +143,9 @@ class Client {
         this.newOrderUrl = res.data.newOrder;
         return true;
     }
+    /**
+     * @param {string | URL} certificateUrl
+     */
     async fetchCertificate(certificateUrl) {
         const data = await this.sign({
             kid: this.myAccountUrl,
@@ -156,6 +167,10 @@ class Client {
         return res.data;
     }
     
+    /**
+     * @param {any} finalizeUrl
+     * @param {string} domain
+     */
     async finalizeOrder(finalizeUrl, domain) {
         const { privateKey } = await generateKeyPair(common.CERTIFICATE_KEY_ALGORITHM);
         // @ts-ignore
@@ -178,7 +193,7 @@ class Client {
             .replace(/\//g, '_')
             .replace(/=/g, '');
 
-        const sendFinalizeRequest = async (finalizeUrl, payload) => {
+        const sendFinalizeRequest = async (/** @type {string | URL} */ finalizeUrl, /** @type {import("jose").JWTPayload | undefined} */ payload) => {
             const data = await this.sign({
                 kid: this.myAccountUrl,
                 nonce: this.replayNonce,
@@ -203,9 +218,9 @@ class Client {
             let retryTime = parseInt(res.headers["retry-after"] || '1') * 1000
             // sleep, retry
             await new Promise(resolve => setTimeout(resolve, retryTime))
-            res = await sendFinalizeRequest(retryUrl, "");
+            res = await sendFinalizeRequest(retryUrl, undefined);
             if (res.data.status == "ready") {
-                res = await sendFinalizeRequest(res.data.finalize, "");
+                res = await sendFinalizeRequest(res.data.finalize, undefined);
                 break
             }
         }
@@ -231,6 +246,9 @@ class Client {
         this.accountPrivateJwk = accountPrivateJwk;
         this.thumbprint = await calculateJwkThumbprint(publicJwk);
     }
+    /**
+     * @param {undefined[]} emails
+     */
     async newAccount(...emails) {
         const data = await this.sign({
             jwk: this.accountPublicJwk,
@@ -265,6 +283,9 @@ class Client {
         this.setReplayNonce(res);
         return true;
     }
+    /**
+     * @param {string[]} domains
+     */
     async newOrder(...domains) {
         const identifiers = domains.map(domain => ({
             type: 'dns',
@@ -297,6 +318,9 @@ class Client {
             orderUrl
         };
     }
+    /**
+     * @param {any} authzUrl
+     */
     async pollAuthz(authzUrl) {
         for (let i = 0; i < 10; i++) {
             const result = await this.authz(authzUrl);
@@ -311,6 +335,9 @@ class Client {
         }
         throw new Error('pollAuthz() timed out');
     }
+    /**
+     * @param {{ url: string | URL; }} challenge
+     */
     async readyChallenge(challenge) {
         const data = await this.sign({
             kid: this.myAccountUrl,
@@ -329,6 +356,10 @@ class Client {
             throw new Error(`readyChallenge() Status Code: ${res.statusCode} Data: ${res.data}`);
         }
     }
+    /**
+     * @param {{ token: string; }} challenge
+     * @param {any} domain
+     */
     receiveServerRequest(challenge, domain) {
         return new Promise((resolve, reject) => {
             const time = setTimeout(() => {
@@ -348,6 +379,9 @@ class Client {
             };
         });
     }
+    /**
+     * @param {{ data?: any; headers: any; statusCode?: number; }} res
+     */
     setReplayNonce(res) {
         const replayNonce = (res.headers['replay-nonce'] || '').trim();
         if (!replayNonce) {

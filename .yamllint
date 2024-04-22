@@ -1,6 +1,7 @@
 ---
 ignore: |
   node_modules/
+  .certs/
 rules:
   braces:
     level: error

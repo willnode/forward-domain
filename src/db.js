@@ -1,6 +1,6 @@
 
 import sqlite from "better-sqlite3";
-import { derToPem } from "./util.js";
+import { derToPem, initMap } from "./util.js";
 import { X509Certificate, createPrivateKey } from "node:crypto";
 import { migrateFromV2 } from "./tools/migrate.js";
 import { dirname } from "node:path";
@@ -66,7 +66,7 @@ export class CertsDB {
         this.db.close();
     }
     loadConfig() {
-        const keys = {};
+        const keys = initMap();
 
         for (const row of this.db.prepare('SELECT * FROM config').all()) {
             // @ts-ignore

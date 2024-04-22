@@ -3,10 +3,13 @@ import path from 'path';
 
 /**
  * @param {string} dir
- * @param {import('../db').CertsDB} db
+ * @param {import('../db.js').CertsDB} db
  */
 function migrateWalkDir(dir, db, count = 0) {
     const files = fs.readdirSync(dir);
+    /**
+     * @type {string[]}
+     */
     let curFiles = []
     files.forEach(file => {
         const filePath = path.join(dir, file);
@@ -38,7 +41,7 @@ function migrateWalkDir(dir, db, count = 0) {
 
 /**
  * @param {string} dir
- * @param {import('../db').CertsDB} db
+ * @param {import('../db.js').CertsDB} db
  */
 export function migrateFromV2(dir, db) {
     // check if v2 account exists, try migrate then.

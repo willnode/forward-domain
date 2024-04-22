@@ -1,9 +1,15 @@
 import http from "node:http";
 import https from "node:https";
 /**
+ * @template T
+ * @typedef {{data: T, headers: import('http').IncomingHttpHeaders, statusCode: number}} Response
+ */
+
+/**
+ * @template T
  * @param {string | URL} url
  * @param {import('https').RequestOptions & {data?: string}} [options]
- * @return {Promise<{data: any, headers: import('http').IncomingHttpHeaders, statusCode: number}>}
+ * @return {Promise<Response<T>>}
  */
 const request = (url, { data = '', ...options } = {}) => {
     return new Promise((resolve, reject) => {
@@ -15,6 +21,9 @@ const request = (url, { data = '', ...options } = {}) => {
         }
         (url.protocol == 'https:' ? https : http).request(url, options, res => {
             const { statusCode, headers } = res;
+            /**
+             * @type {any}
+             */
             let data = '';
             res
                 .on('data', chunk => {
