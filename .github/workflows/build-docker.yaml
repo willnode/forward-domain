@@ -1,5 +1,5 @@
 ---
-name: Build & Publish Postgis Test
+name: Build & Publish Docker
 
 on:  # yamllint disable-line rule:truthy
   schedule:
@@ -17,7 +17,7 @@ env:
 
 jobs:
   build-and-publish:
-    name: Build & Publish
+    name: Build & Publish Docker
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -34,7 +34,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata for the Docker image
         id: meta
-        uses: docker/metadata-action@5
+        uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
