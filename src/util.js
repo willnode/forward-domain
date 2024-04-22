@@ -1,5 +1,4 @@
 import request from "./certnode/lib/request.js";
-import crypto from "node:crypto";
 import fs from "node:fs";
 import { isIPv4, isIPv6 } from "node:net";
 import { fileURLToPath } from "node:url";

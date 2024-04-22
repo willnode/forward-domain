@@ -6,7 +6,7 @@ import {
     isHostBlacklisted,
     validateCAARecords,
     isExceedHostLimit,
-} from "../src/util";
+} from "../src/util.js";
 
 test('blacklist works', () => {
     const mockEnv = {
