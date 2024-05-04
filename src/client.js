@@ -1,4 +1,5 @@
 import { client, getStat } from "./sni.js";
+import { HashMap } from "hashmap-with-ttl";
 import {
     findTxtRecord,
     isHostBlacklisted,
@@ -20,12 +21,12 @@ import {
  * @property {number} httpStatus
  */
 /**
- * @type {Record<string, Cache>}
+ * @type {HashMap<Cache>}
  */
-let resolveCache = {};
+let resolveCache = new HashMap({ capacity: 10000 });
 
 function pruneCache() {
-    resolveCache = {};
+    resolveCache = new HashMap({ capacity: 10000 });
 }
 
 /**
@@ -124,10 +125,10 @@ const listener = async function (req, res) {
                     return;
             }
         }
-        let cache = resolveCache[host];
+        let cache = resolveCache.get(host);
         if (!cache || (Date.now() > cache.expire)) {
             cache = await buildCache(host);
-            resolveCache[host] = cache;
+            resolveCache.update(host, cache);
         }
         if (cache.blacklisted) {
             if (blacklistRedirectUrl) {

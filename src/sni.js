@@ -4,6 +4,7 @@ import path from "path";
 import { blacklistRedirectUrl, isIpAddress, isHostBlacklisted, ensureDirSync, derToPem } from "./util.js";
 import AsyncLock from 'async-lock';
 import { CertsDB } from "./db.js";
+import { HashMap } from "hashmap-with-ttl";
 
 const lock = new AsyncLock();
 // the regex is for Windows shenanigans
@@ -15,18 +16,18 @@ ensureDirSync(certsDir);
 const db = new CertsDB(dbFile);
 
 /**
- * @type {Record<string, import("./db.js").CertCache>}
+ * @type {HashMap<import("./db.js").CertCache>}
  */
-let resolveCache = {};
+let resolveCache = new HashMap({ capacity: 10000 });
 
 
 /**
- * @type {{domains: number, iat: number, exp: number}}
+ * @type {{domains: number, in_mem: number, iat: number, exp: number}}
  */
 let statCache;
 
 function pruneCache() {
-    resolveCache = {};
+    resolveCache = new HashMap({ capacity: 10000 });
 }
 
 function getStat() {
@@ -35,6 +36,7 @@ function getStat() {
     }
     statCache = {
         domains: db.countCert(),
+        in_mem: resolveCache.length(),
         iat: Date.now(),
         exp: Date.now() + 1000 * 60 * 60 * 24,
     };
@@ -74,13 +76,13 @@ async function buildCache(host) {
  */
 async function getKeyCert(servername) {
     servername = servername.toLowerCase();
-    const cache = resolveCache[servername];
+    const cache = resolveCache.get(servername);
     if (!cache || (Date.now() > cache.expire)) {
         let cacheNew = await buildCache(servername);
         if (!cacheNew) {
             return undefined;
         }
-        resolveCache[servername] = cacheNew;
+        resolveCache.update(servername, cacheNew);
         return {
             key: cacheNew.key,
             cert: cacheNew.cert,
