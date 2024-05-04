@@ -5,6 +5,15 @@ import { fileURLToPath } from "node:url";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
+/**
+ * @type {Record<string, boolean>}
+ */
+const allowedHttpStatusCodes = {
+    "301": true, // Legacy Permanent Redirect with POST -> GET
+    "302": true, // Legacy Temporary Redirect with POST -> GET
+    "307": true, // Modern Temporary Redirect with POST -> POST
+    "308": true, // Modern Permanent Redirect with POST -> POST
+}
 
 /**
  * @type {Record<string, boolean> | null}
@@ -117,7 +126,12 @@ export function isExceedLabelLimit(host) {
 export function isExceedHostLimit(host) {
     return host.length > 64
 }
-
+/**
+ * @param {string} code
+ */
+export function isHttpCodeAllowed(code) {
+    return allowedHttpStatusCodes[code] || false
+}
 /**
  * @param {fs.PathLike} dir
  */

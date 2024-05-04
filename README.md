@@ -45,7 +45,7 @@ old.com     IN    A       167.172.5.31
 _.old.com   IN    TXT     forward-domain=https://new.net/*
 ```
 
-The star `*` at the end tells us that the remaining URL path is also forwarded to the destination URL.
+The star `*` at the end tells us that the remaining URL path is also need to be forwarded to the destination URL.
 
 > If you use Cloudflare or any DNS which supports [CNAME Flattening](https://blog.cloudflare.com/introducing-cname-flattening-rfc-compliant-cnames-at-a-domains-root/), you still can use CNAME records pointing to `r.forwarddomain.net`. It's recommended to use CNAME records rather than A/AAAA records.
 
@@ -56,7 +56,12 @@ www.old.com     IN    CNAME   r.forwarddomain.net
 _.www.old.com   IN    TXT     http-status=302;forward-domain=https://old.com/*
 ```
 
-> Only the HTTP status code 301 and 302 are supported. By default it's 301, which is permanent redirection. Set to 302 if you want temporary redirection, it has effect on search engine indexing.
+The HTTP codes available for use include:
+
++ `301` Permanent redirection (default)
++ `302` Temporary redirection (may keeping SEO from indexing new location)
++ `307` Temporary redirection while keeping HTTP verb
++ `308` Permanent redirection while keeping HTTP verb
 
 ## FAQ
 

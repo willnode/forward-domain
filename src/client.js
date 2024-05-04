@@ -7,7 +7,8 @@ import {
     blacklistRedirectUrl,
     isExceedLabelLimit,
     validateCAARecords,
-    isExceedHostLimit
+    isExceedHostLimit,
+    isHttpCodeAllowed
 } from "./util.js";
 
 /**
@@ -62,8 +63,8 @@ async function buildCache(host) {
         url = url.slice(0, -1);
         expand = true;
     }
-    if (!['301', '302'].includes(httpStatus)) {
-        throw new Error(`The record "${url}" wants to use the http status code ${httpStatus} which is not allowed (only 301 and 302)`);
+    if (!isHttpCodeAllowed(httpStatus)) {
+        throw new Error(`The record "${url}" wants to use the http status code ${httpStatus} which is not allowed (only 301, 302, 307 and 308)`);
     }
     return {
         url,
