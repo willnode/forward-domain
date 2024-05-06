@@ -46,7 +46,7 @@ function getStat() {
         domains: db.countCert(),
         in_mem: resolveCache.length(),
         iat: Date.now(),
-        exp: Date.now() + 1000 * 60 * 60 * 24,
+        exp: Date.now() + 1000 * 60 * 60,
     };
     return statCache;
 }
