@@ -1,10 +1,18 @@
 import tls from "tls";
-import { Client } from "./certnode/lib/index.js";
 import path from "path";
-import { blacklistRedirectUrl, isIpAddress, isHostBlacklisted, ensureDirSync, derToPem } from "./util.js";
 import AsyncLock from 'async-lock';
+import { Client } from "./certnode/lib/index.js";
 import { CertsDB } from "./db.js";
 import { HashMap } from "hashmap-with-ttl";
+import {
+    blacklistRedirectUrl,
+    isIpAddress,
+    isHostBlacklisted,
+    ensureDirSync,
+    isExceedHostLimit,
+    isExceedLabelLimit,
+    validateCAARecords
+} from "./util.js";
 
 const lock = new AsyncLock();
 // the regex is for Windows shenanigans
@@ -56,6 +64,9 @@ async function buildCache(host) {
     }
     catch {
         if ((isHostBlacklisted(host) && !blacklistRedirectUrl) || isIpAddress(host)) {
+            return null;
+        }
+        if (isExceedHostLimit(host) || isExceedLabelLimit(host) || await validateCAARecords(host)) {
             return null;
         }
 
