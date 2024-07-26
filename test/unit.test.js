@@ -45,7 +45,7 @@ test('client validation works', async () => {
 
 test('caa resolver works', async () => {
     expect(await validateCAARecords("forwarddomain.net")).toBe(null);
-    expect(await validateCAARecords("github.com")).toEqual([
+    expect((await validateCAARecords("github.com"))?.sort()).toEqual([
         "0 issue \"digicert.com\"",
         "0 issue \"globalsign.com\"",
         "0 issue \"sectigo.com\""
