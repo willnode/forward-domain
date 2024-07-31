@@ -27,6 +27,7 @@ This guide will walk you through the process of setting up your own instance of 
 `BLACKLIST_HOSTS` | A comma-separated list of root domains to blacklist
 `BLACKLIST_REDIRECT` | The URL to redirect to when a blacklisted host is accessed
 `HOME_DOMAIN` | The host to enable `/stat` endpoint
+`USE_LOCAL_DNS` | Default is `false`, so the Google DNS is used. Set it to `true` if you want to use the DNS resolver of your own host
 
 If `WHITELIST_HOSTS` is set, `BLACKLIST_HOSTS` is ignored. Both is mutually exclusive.
 
