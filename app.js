@@ -1,4 +1,30 @@
 import {plainServer, secureServer} from "./index.js";
+import fs from "fs";
+import { watch } from "chokidar";
+import dotenv from "dotenv";
+
+// Function to reload the .env variables
+function reloadEnv() {
+  if (fs.existsSync('.env')) {
+    const envConfig = dotenv.parse(fs.readFileSync('.env'));
+    for (const k in envConfig) {
+      process.env[k] = envConfig[k];
+    }
+    console.log('Environment variables reloaded.');
+  } else {
+    console.warn('.env file does not exist.');
+  }
+}
+
+// Watch the .env file for changes
+watch('.env').on('change', () => {
+  console.log('.env file changed, reloading...');
+  reloadEnv();
+});
+
+// Initial load
+reloadEnv();
+
 
 const port80 = parseInt(process.env.HTTP_PORT || "8080");
 const port443 = parseInt(process.env.HTTPS_PORT || "8443");
