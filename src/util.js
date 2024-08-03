@@ -3,6 +3,7 @@ import fs from "node:fs";
 import { isIPv4, isIPv6 } from "node:net";
 import { fileURLToPath } from "node:url";
 import dns from 'dns/promises';
+import forge from "node-forge";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
@@ -251,13 +252,33 @@ export async function findTxtRecord(host, mockResolve = undefined) {
     return null;
 }
 
+/**
+ * 
+ * @param {string} cert 
+ */
+export function getCertExpiry(cert) {
+    const x509 = forge.pki.certificateFromPem(cert);
+    return x509.validity.notAfter.getTime()
+}
 
 /**
- * @param {Buffer} derBuffer
+ * 
+ * @param {string} key 
+ */
+export function pemToDer(key) {
+    const keys = forge.pem.decode(key);
+    return keys.map(x => Buffer.from(x.body, 'binary'));
+}
+
+/**
+ * @param {Buffer|Buffer[]} derBuffer
  * @param {"public"|"private"|"certificate"} type
  * @returns {string}
  */
 export function derToPem(derBuffer, type) {
+    if (Array.isArray(derBuffer)) {
+        return derBuffer.filter(x => x && x.length > 0).map(x => derToPem(x, type)).join('');
+    }
     const prefix = {
         'certificate': 'CERTIFICATE',
         'public': 'PUBLIC KEY',

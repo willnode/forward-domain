@@ -63,3 +63,16 @@ export function migrateFromV2(dir, db) {
     migrateWalkDir(dir, db);
     process.stdout.write(`\nImport completed\n`);
 }
+
+/**
+ * @param {import('../db.js').CertsDB} db
+ */
+export function migrateFromV3({ db }) {
+    // check if v2 account exists, try migrate then.
+
+    process.stdout.write(`Begin v3 -> v4 migration sessions\n`);
+
+    db.prepare(`ALTER TABLE certs ADD COLUMN ca BLOB`).run();
+
+    process.stdout.write(`\nImport completed\n`);
+}

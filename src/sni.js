@@ -3,7 +3,7 @@ import path from "path";
 import AsyncLock from 'async-lock';
 import { Client } from "./certnode/lib/index.js";
 import { CertsDB } from "./db.js";
-import { HashMap } from "hashmap-with-ttl";
+import { LRUCache } from 'lru-cache'
 import {
     blacklistRedirectUrl,
     isIpAddress,
@@ -11,7 +11,8 @@ import {
     ensureDirSync,
     isExceedHostLimit,
     isExceedLabelLimit,
-    validateCAARecords
+    validateCAARecords,
+    derToPem
 } from "./util.js";
 
 const lock = new AsyncLock();
@@ -24,9 +25,9 @@ ensureDirSync(certsDir);
 const db = new CertsDB(dbFile);
 
 /**
- * @type {HashMap<import("./db.js").CertCache>}
+ * @type {LRUCache<string, import("./db.js").CertCache>}
  */
-let resolveCache = new HashMap({ capacity: 10000 });
+let resolveCache = new LRUCache({ max: 10000 });
 
 
 /**
@@ -35,7 +36,7 @@ let resolveCache = new HashMap({ capacity: 10000 });
 let statCache;
 
 function pruneCache() {
-    resolveCache = new HashMap({ capacity: 10000 });
+    resolveCache = new LRUCache({ max: 10000 });
 }
 
 function getStat() {
@@ -44,7 +45,7 @@ function getStat() {
     }
     statCache = {
         domains: db.countCert(),
-        in_mem: resolveCache.length(),
+        in_mem: resolveCache.size,
         iat: Date.now(),
         exp: Date.now() + 1000 * 60 * 60,
     };
@@ -93,7 +94,7 @@ async function getKeyCert(servername) {
         if (!cacheNew) {
             return undefined;
         }
-        resolveCache.update(servername, cacheNew);
+        resolveCache.set(servername, cacheNew);
         return {
             key: cacheNew.key,
             cert: cacheNew.cert,
