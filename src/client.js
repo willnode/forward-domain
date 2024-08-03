@@ -1,5 +1,5 @@
+import { LRUCache } from "lru-cache";
 import { client, getStat } from "./sni.js";
-import { HashMap } from "hashmap-with-ttl";
 import {
     findTxtRecord,
     isHostBlacklisted,
@@ -21,12 +21,12 @@ import {
  * @property {number} httpStatus
  */
 /**
- * @type {HashMap<Cache>}
+ * @type {LRUCache<string, Cache>}
  */
-let resolveCache = new HashMap({ capacity: 10000 });
+let resolveCache = new LRUCache({ max: 10000 });
 
 function pruneCache() {
-    resolveCache = new HashMap({ capacity: 10000 });
+    resolveCache = new LRUCache({ max: 10000 });
 }
 
 /**
@@ -128,7 +128,7 @@ const listener = async function (req, res) {
         let cache = resolveCache.get(host);
         if (!cache || (Date.now() > cache.expire)) {
             cache = await buildCache(host);
-            resolveCache.update(host, cache);
+            resolveCache.set(host, cache);
         }
         if (cache.blacklisted) {
             if (blacklistRedirectUrl) {

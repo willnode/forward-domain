@@ -1,8 +1,7 @@
 
 import sqlite from "better-sqlite3";
-import { derToPem, initMap } from "./util.js";
-import { X509Certificate, createPrivateKey } from "node:crypto";
-import { migrateFromV2 } from "./tools/migrate.js";
+import { derToPem, getCertExpiry, initMap, pemToDer } from "./util.js";
+import { migrateFromV2, migrateFromV3 } from "./tools/migrate.js";
 import { dirname } from "node:path";
 
 /**
@@ -26,6 +25,7 @@ import { dirname } from "node:path";
  * @property {string} domain
  * @property {Buffer} key DER
  * @property {Buffer} cert DER
+ * @property {Buffer} ca DER
  * @property {number} expire
  */
 
@@ -40,6 +40,7 @@ export class CertsDB {
                     domain TEXT UNIQUE,
                     key BLOB,
                     cert BLOB,
+                    ca BLOB,
                     expire INTEGER
                 )`).run();
         db.prepare(`CREATE TABLE IF NOT EXISTS config (
@@ -47,20 +48,25 @@ export class CertsDB {
                     value TEXT
                 )`).run();
 
-        this.save_cert_stmt = db.prepare(`INSERT OR REPLACE INTO certs (domain, key, cert, expire) VALUES (?, ?, ?, ?)`)
-        this.load_cert_stmt = db.prepare(`SELECT * FROM certs WHERE domain = ?`)
-        this.count_cert_stmt = db.prepare(`SELECT COUNT(*) as domains FROM certs`)
+
         this.load_conf_stmt = db.prepare(`SELECT * FROM config`)
         this.save_conf_stmt = db.prepare(`INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)`)
 
         this.db = db;
         this.config = this.loadConfig();
-
         if (!this.config.version) {
             migrateFromV2(dirname(path), this);
-            this.config.version = '3';
+            this.config.version = '4';
+            this.saveConfig('version', this.config.version);
+        } else if (this.config.version === '3') {
+            migrateFromV3(this);
+            this.config.version = '4';
             this.saveConfig('version', this.config.version);
         }
+
+        this.save_cert_stmt = db.prepare(`INSERT OR REPLACE INTO certs (domain, key, cert, ca, expire) VALUES (?, ?, ?, ?, ?)`)
+        this.load_cert_stmt = db.prepare(`SELECT * FROM certs WHERE domain = ?`)
+        this.count_cert_stmt = db.prepare(`SELECT COUNT(*) as domains FROM certs`)
     }
     close() {
         this.db.close();
@@ -68,7 +74,7 @@ export class CertsDB {
     loadConfig() {
         const keys = initMap();
 
-        for (const row of this.db.prepare('SELECT * FROM config').all()) {
+        for (const row of this.load_conf_stmt.all()) {
             // @ts-ignore
             keys[row.key] = row.value;
         }
@@ -116,7 +122,7 @@ export class CertsDB {
             throw new Error("Domain not found")
         }
         return {
-            cert: derToPem(row.cert, "certificate"),
+            cert: derToPem([row.cert, row.ca], "certificate"),
             key: derToPem(row.key, "private"),
             expire: row.expire,
         };
@@ -125,20 +131,22 @@ export class CertsDB {
      * @param {string} domain 
      * @param {Buffer} key
      * @param {Buffer} cert
+     * @param {Buffer} ca
      * @param {number} expire
      * @returns {CertRow}
      */
-    saveCert(domain, key, cert, expire) {
+    saveCert(domain, key, cert, ca, expire) {
         if (!this.save_cert_stmt) {
             throw new Error("DB is not initialized")
         }
         this.save_cert_stmt.run([domain,
             key,
             cert,
+            ca,
             expire,
         ]);
         return {
-            domain, key, cert, expire
+            domain, key, cert, ca, expire
         }
     }
     /**
@@ -147,17 +155,13 @@ export class CertsDB {
      * @param {string} cert
      */
     saveCertFromCache(domain, key, cert) {
-        const x509 = new X509Certificate(cert);
-        return this.saveCert(domain, createPrivateKey({
-            key: key,
-            type: "pkcs8",
-            format: "pem",
-        }).export({
-            format: "der",
-            type: "pkcs8",
-        }),
-            x509.raw,
-            Date.parse(x509.validTo),
+        const keyBuffer = pemToDer(key)[0];
+        const certBuffers = pemToDer(cert);
+        return this.saveCert(domain,
+            keyBuffer,
+            certBuffers[0],
+            certBuffers[1],
+            getCertExpiry(cert),
         )
     }
 }
