@@ -6,7 +6,6 @@ import dns from 'dns/promises';
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
-const useLocalDNS = process.env.USE_LOCAL_DNS || false
 /**
  * @type {Record<string, boolean>}
  */
@@ -17,6 +16,11 @@ const allowedHttpStatusCodes = {
     "308": true, // Modern Permanent Redirect with POST -> POST
 }
 
+
+/**
+ * @type {boolean | null}
+ */
+let useLocalDNS = null
 /**
  * @type {Record<string, boolean> | null}
  */
@@ -171,23 +175,17 @@ const parseTxtRecordData = (value) => {
  * @return {Promise<string[] | null>}
  */
 export async function validateCAARecords(host, mockResolve = undefined) {
+    if (useLocalDNS === null) {
+        useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
+    }
+    let issueRecords;
     if (useLocalDNS) {
-        const records = mockResolve || await dns.resolveCaa(`${encodeURIComponent(host)}`);
+        const records = await dns.resolveCaa(host);
         if (!records || records.length === 0) {
             return null;
         }
 
-        const issueRecords = records
-            .filter(record => record.type === 257)
-            .map(record => record.data)
-            .filter(data => data.startsWith('0 issue '));
-
-        // Check if any record allows Let's Encrypt (or no record at all)
-        if (issueRecords.length === 0 || issueRecords.some(record => caaRegex.test(record))) {
-            return null;
-        }
-        return issueRecords;
-
+        issueRecords = records.filter(record => record.issue).map(record => `0 issue "${record.issue}"`)
     } else {
         /**
          * @type {{data: {Answer: {data: string, type: number}[]}}}
@@ -197,16 +195,17 @@ export async function validateCAARecords(host, mockResolve = undefined) {
             return null;
         }
 
-        const issueRecords = resolve.data.Answer.filter((x) =>
+        issueRecords = resolve.data.Answer.filter((x) =>
             x.type == 257 && typeof x.data === 'string' && x.data.startsWith('0 issue ')
         ).map(x => x.data);
-
-        // check if any record allows Let'sEncrypt (or no record at all)
-        if (issueRecords.length == 0 || issueRecords.some(x => caaRegex.test(x))) {
-            return null;
-        }
-        return issueRecords;
     }
+
+    // Check if any record allows Let's Encrypt (or no record at all)
+    if (issueRecords.length === 0 || issueRecords.some(record => caaRegex.test(record))) {
+        return null;
+    }
+
+    return issueRecords;
 }
 
 /**
@@ -215,10 +214,13 @@ export async function validateCAARecords(host, mockResolve = undefined) {
  * @return {Promise<{url: string, httpStatus?: string} | null>}
  */
 export async function findTxtRecord(host, mockResolve = undefined) {
+    if (useLocalDNS === null) {
+        useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
+    }
     if (useLocalDNS) {
-        const resolve = mockResolve || await dns.resolveTxt(`_.${encodeURIComponent(host)}`);
+        const resolve = await dns.resolveTxt(`_.${host}`);
         for (const record of resolve) {
-            const joinedRecord = record.join('');
+            const joinedRecord = record.join(';');
             const txtData = parseTxtRecordData(joinedRecord);
             if (!txtData[recordParamDestUrl]) continue;
             return {
@@ -226,8 +228,10 @@ export async function findTxtRecord(host, mockResolve = undefined) {
                 httpStatus: txtData[recordParamHttpStatus],
             };
         }
-        return null;
     } else {
+        /**
+         * @type {{data: {Answer: {data: string, type: number}[]}}}
+         */
         const resolve = mockResolve || await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
         if (!resolve.data.Answer) {
             return null;
@@ -243,8 +247,8 @@ export async function findTxtRecord(host, mockResolve = undefined) {
                 httpStatus: txtData[recordParamHttpStatus],
             };
         }
-        return null;
     }
+    return null;
 }
 
 
