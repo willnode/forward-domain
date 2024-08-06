@@ -1,4 +1,5 @@
 import {plainServer, secureServer} from "./index.js";
+import { clearConfig } from "./src/util.js";
 import fs from "fs";
 import { watch } from "chokidar";
 import dotenv from "dotenv";
@@ -19,6 +20,7 @@ function reloadEnv() {
 // Watch the .env file for changes
 watch('.env').on('change', () => {
   console.log('.env file changed, reloading...');
+  clearConfig();
   reloadEnv();
 });
 

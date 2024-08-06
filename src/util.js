@@ -76,6 +76,16 @@ function csvToMap(str) {
 }
 
 /**
+* @return {void}
+*/
+export function clearConfig() {
+    whitelistMap = null;
+    blacklistMap = null;
+    useLocalDNS = null;
+    blacklistRedirectUrl = null;
+}
+
+/**
  * @param {Record<string, string>} [mockEnv]
  */
 export function isHostBlacklisted(domain = '', mockEnv = undefined) {
