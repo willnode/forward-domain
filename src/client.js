@@ -153,6 +153,10 @@ const listener = async function (req, res) {
                                 const parsedData = querystring.parse(body);
                                 const domain = parsedData.domain;
 
+                                if (!domain) {
+                                    return;
+                                }
+
                                 if (validator.isFQDN(domain)) {
                                     const cacheExists = resolveCache.get(domain);
                                     if (cacheExists !== null && cacheExists !== undefined && cacheExists !== '') {
