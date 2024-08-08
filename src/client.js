@@ -25,6 +25,11 @@ import {
  */
 let resolveCache = new LRUCache({ max: 10000 });
 
+/**
+ * @type {int | 86400}
+ */
+const cacheExpirySeconds = parseInt(process.env.CACHE_EXPIRY_SECONDS, 10) || 86400;
+
 function pruneCache() {
     resolveCache = new LRUCache({ max: 10000 });
 }
@@ -71,7 +76,7 @@ async function buildCache(host) {
         url,
         expand,
         blacklisted: isHostBlacklisted(host),
-        expire: Date.now() + 86400 * 1000,
+        expire: Date.now() + cacheExpirySeconds * 1000,
         httpStatus: parseInt(httpStatus),
     };
 }
