@@ -149,8 +149,11 @@ const listener = async function (req, res) {
                                 const domain = parsedData.domain;
 
                                 if (validator.isFQDN(domain)) {
-                                    // Overwrite the cache for the domain with nothing
-                                    resolveCache.set(domain, ``);
+                                    const cacheExists = resolveCache.get(domain);
+                                    if (cacheExists !== null && cacheExists !== undefined && cacheExists !== '') {
+                                        // Overwrite the cache for the domain with nothing
+                                        resolveCache.set(domain, ``);
+                                    }
                                 }
                             }
                         });
