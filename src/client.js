@@ -1,5 +1,7 @@
 import { LRUCache } from "lru-cache";
 import { client, getStat } from "./sni.js";
+import querystring from 'querystring';
+import validator from 'validator';
 import {
     findTxtRecord,
     isHostBlacklisted,
@@ -11,6 +13,8 @@ import {
     isExceedHostLimit,
     isHttpCodeAllowed
 } from "./util.js";
+
+const MAX_DATA_SIZE = 10 * 1024; // 10 KB
 
 /**
  * @typedef {Object} Cache
@@ -128,7 +132,42 @@ const listener = async function (req, res) {
                     res.writeHead(200, { 'Content-Type': 'text/plain' });
                     res.write("ok");
                     return;
+                case '/flushcache':
+                    if (req.method === 'POST') {
+                        let body = '';
+                        let totalSize = 0;
+
+                        req.on('data', chunk => {
+                            totalSize += chunk.length;
+                            // Disconnect if the data stream is too large
+                            if (totalSize > MAX_DATA_SIZE) {
+                                req.destroy();
+                                return;
+                            }
+
+                            body += chunk.toString();
+                        });
+
+                        req.on('end', () => {
+                            if (totalSize <= MAX_DATA_SIZE) {
+                                const parsedData = querystring.parse(body);
+                                const domain = parsedData.domain;
+
+                                if (validator.isFQDN(domain)) {
+                                    // Overwrite the cache for the domain with nothing
+                                    resolveCache.set(domain, ``);
+                                }
+                            }
+                        });
+                        res.writeHead(200, { 'Content-Type': 'text/plain' });
+                        res.write("Cache cleared");
+                        return;
+                    }
+                    res.writeHead(405, {'Content-Type': 'text/plain'});
+                    res.write("Method Not Allowed");
+                    return;
             }
+
         }
         let cache = resolveCache.get(host);
         if (!cache || (Date.now() > cache.expire)) {
