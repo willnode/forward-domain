@@ -160,8 +160,8 @@ const listener = async function (req, res) {
                                 if (validator.isFQDN(domain)) {
                                     const cacheExists = resolveCache.get(domain);
                                     if (cacheExists !== null && cacheExists !== undefined && cacheExists !== '') {
-                                        // Overwrite the cache for the domain with nothing
-                                        resolveCache.set(domain, ``);
+                                        // Remove the cache entry
+                                        resolveCache.delete(domain);
                                     }
                                 }
                             }
