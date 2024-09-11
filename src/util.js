@@ -203,7 +203,7 @@ export async function validateCAARecords(host, mockResolve = undefined) {
         useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
     }
     let issueRecords;
-    if (useLocalDNS) {
+    if (useLocalDNS && !mockResolve) {
         const records = await dns.resolveCaa(host);
         if (!records || records.length === 0) {
             return null;
@@ -241,8 +241,11 @@ export async function findTxtRecord(host, mockResolve = undefined) {
     if (useLocalDNS === null) {
         useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
     }
-    if (useLocalDNS) {
-        const resolve = await dns.resolveTxt(`_.${host}`);
+    if (useLocalDNS && !mockResolve) {
+        const resolve = [
+            ...await dns.resolveTxt(`_.${host}`),
+            ...await dns.resolveTxt(`fwd.${host}`),
+        ];
         for (const record of resolve) {
             const joinedRecord = record.join(';');
             const txtData = parseTxtRecordData(joinedRecord);
@@ -254,13 +257,13 @@ export async function findTxtRecord(host, mockResolve = undefined) {
         }
     } else {
         /**
-         * @type {{data: {Answer: {data: string, type: number}[]}}}
+         * @type {{data: string, type: number}[]}
          */
-        const resolve = mockResolve || await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`);
-        if (!resolve.data.Answer) {
-            return null;
-        }
-        for (const head of resolve.data.Answer) {
+        const resolve = mockResolve ? mockResolve.data.Answer : [
+            ...(await request(`https://dns.google/resolve?name=_.${encodeURIComponent(host)}&type=TXT`)).data.Answer || [],
+            ...(await request(`https://dns.google/resolve?name=fwd.${encodeURIComponent(host)}&type=TXT`)).data.Answer || [],
+        ];
+        for (const head of resolve) {
             if (head.type !== 16) { // RR type of TXT is 16
                 continue;
             }
