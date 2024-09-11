@@ -13,7 +13,7 @@
   },
   "scripts": {
     "test": "(cd test && go run .)",
-    "start": "NODE_ENV=production node --env-file=.env app.js"
+    "start": "NODE_ENV=production node app.js"
   },
   "keywords": [],
   "author": "Wildan Mubarok",

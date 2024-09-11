@@ -7,6 +7,7 @@ import forge from "node-forge";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
+
 /**
  * @type {Record<string, boolean>}
  */
@@ -30,6 +31,17 @@ let blacklistMap = null;
  * @type {Record<string, boolean> | null}
  */
 let whitelistMap = null;
+/**
+ * @type {number | null}
+ */
+let cacheExpirySeconds = null;
+
+export function getExpiryDate() {
+    if (cacheExpirySeconds === null) {
+        cacheExpirySeconds = parseInt(process.env.CACHE_EXPIRY_SECONDS || '86400')
+    }
+    return Date.now() + cacheExpirySeconds * 1000;
+}
 
 /**
  * @returns {Record<string, any>}
@@ -83,6 +95,7 @@ export function clearConfig() {
     blacklistMap = null;
     useLocalDNS = null;
     blacklistRedirectUrl = null;
+    cacheExpirySeconds = null;
 }
 
 /**
