@@ -242,18 +242,23 @@ export async function findTxtRecord(host, mockResolve = undefined) {
         useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
     }
     if (useLocalDNS && !mockResolve) {
-        const resolve = [
-            ...await dns.resolveTxt(`_.${host}`),
-            ...await dns.resolveTxt(`fwd.${host}`),
+        const resolvePromises = [
+            dns.resolveTxt(`_.${host}`),
+            dns.resolveTxt(`fwd.${host}`)
         ];
-        for (const record of resolve) {
-            const joinedRecord = record.join(';');
-            const txtData = parseTxtRecordData(joinedRecord);
-            if (!txtData[recordParamDestUrl]) continue;
-            return {
-                url: txtData[recordParamDestUrl],
-                httpStatus: txtData[recordParamHttpStatus],
-            };
+    
+        const resolved = await Promise.any(resolvePromises).catch(() => null);
+    
+        if (resolved) {
+            for (const record of resolved) {
+                const joinedRecord = record.join(';');
+                const txtData = parseTxtRecordData(joinedRecord);
+                if (!txtData[recordParamDestUrl]) continue;
+                return {
+                    url: txtData[recordParamDestUrl],
+                    httpStatus: txtData[recordParamHttpStatus],
+                };
+            }
         }
     } else {
         /**

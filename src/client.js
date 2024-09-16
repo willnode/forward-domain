@@ -59,11 +59,11 @@ async function buildCache(host) {
     let expand = false;
     let recordData = await findTxtRecord(host);
     if (!recordData) {
-        throw new Error(`The TXT record data for "_.${host}" is missing`);
+        throw new Error(`The TXT record data for "_.${host}" or "fwd.${host}" is missing`);
     }
     let { url, httpStatus = '301' } = recordData;
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
-        throw new Error(`The TXT record data for "_.${host}" is not an absolute URL`);
+        throw new Error(`The TXT record data for "_.${host}" or "fwd.${host}" is not an absolute URL`);
     }
     if (url.endsWith('*')) {
         url = url.slice(0, -1);
