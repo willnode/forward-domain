@@ -203,12 +203,14 @@ export async function validateCAARecords(host, mockResolve = undefined) {
         useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
     }
     let issueRecords;
+    let records;
     if (useLocalDNS && !mockResolve) {
-        const records = await dns.resolveCaa(host);
-        if (!records || records.length === 0) {
+        try {
+            records = mockResolve || await dns.resolveCaa(host);
+        } catch (error) {
             return null;
         }
-
+        
         issueRecords = records.filter(record => record.issue).map(record => `0 issue "${record.issue}"`)
     } else {
         /**
