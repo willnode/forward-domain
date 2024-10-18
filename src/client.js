@@ -61,7 +61,7 @@ async function buildCache(host) {
     if (!recordData) {
         throw new Error(`The TXT record data for "_.${host}" or "fwd.${host}" is missing`);
     }
-    let { url, httpStatus = '301' } = recordData;
+    let { url, httpStatus = '302' } = recordData;
     if (url.indexOf('http://') !== 0 && url.indexOf('https://') !== 0) {
         throw new Error(`The TXT record data for "_.${host}" or "fwd.${host}" is not an absolute URL`);
     }
