@@ -1,4 +1,6 @@
-import {plainServer, secureServer} from "./index.js";
+import { plainServer, secureServer } from "./index.js";
+import { pruneCache as pruneCacheSni } from "./src/sni.js";
+import { pruneCache as pruneCacheClient } from "./src/client.js";
 import { clearConfig } from "./src/util.js";
 import fs from "fs";
 import { watch } from "chokidar";
@@ -21,6 +23,8 @@ function reloadEnv() {
 watch('.env').on('change', () => {
   console.log('.env file changed, reloading...');
   clearConfig();
+  pruneCacheClient();
+  pruneCacheSni();
   reloadEnv();
 });
 
