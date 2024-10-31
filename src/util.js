@@ -35,6 +35,14 @@ let whitelistMap = null;
  * @type {number | null}
  */
 let cacheExpirySeconds = null;
+/**
+ * @type {boolean | null}
+ */
+let debugMode = null
+/**
+ * @type {number | null}
+ */
+let debugLevel = null
 
 export function getExpiryDate() {
     if (cacheExpirySeconds === null) {
@@ -96,6 +104,8 @@ export function clearConfig() {
     useLocalDNS = null;
     blacklistRedirectUrl = null;
     cacheExpirySeconds = null;
+    debugMode = null;
+    debugLevel = null;
 }
 
 /**
@@ -136,6 +146,51 @@ export function isHostBlacklisted(domain = '', mockEnv = undefined) {
         }
         return true;
     }
+}
+
+/**
+ * Returns the current date and time in the format: "YYYY-MM-DD HH:MM:SS".
+ *
+ * @returns {string} The current date and time as a formatted string.
+ */
+export function CurrentDate() {
+    const now = new Date();
+
+    return (
+        now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0')
+    );
+}
+
+/**
+ * Outputs debug messages to the console based on the specified debug level.
+ * Debugging is controlled by the `DEBUG_MODE` and `DEBUG_LEVEL` environment variables.
+ *
+ * @param {number} level - The debug level of the message (1 - 3).
+ * @param {string} msg - The debug message to output.
+ * 
+ */
+export function debugOutput(level,msg) {
+   if (debugMode === null) {
+     debugMode = process.env.DEBUG_MODE == 'true';
+   }
+   if (debugLevel === null) {
+     debugLevel = process.env.DEBUG_LEVEL || 1;
+   }
+   if (debugMode) {
+     const date = CurrentDate();
+     if (level === 1 && debugLevel === 1 ) {
+ 	   console.log(`[${date}] ${msg}`);
+     } else if (level <= 2 && debugLevel <= 2 ) {
+ 	   console.log(`[${date}] ${msg}`);
+     } else if (level <=3 & debugLevel <= 3) {
+ 	   console.log(`[${date}] ${msg}`);
+     }
+   }
 }
 
 /**
@@ -201,6 +256,7 @@ const parseTxtRecordData = (value) => {
 export async function validateCAARecords(host, mockResolve = undefined) {
     if (useLocalDNS === null) {
         useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
+	debugOutput(3, `useLocalDNS: ${useLocalDNS}`);
     }
     let issueRecords;
     if (useLocalDNS && !mockResolve) {
@@ -226,6 +282,7 @@ export async function validateCAARecords(host, mockResolve = undefined) {
         return null;
     }
 
+    debugOutput(3, `issueRecords for ${host}: ${issueRecords}`);
     return issueRecords;
 }
 
@@ -247,6 +304,7 @@ export async function findTxtRecord(host, mockResolve = undefined) {
         const resolved = await Promise.any(resolvePromises).catch(() => null);
     
         if (resolved) {
+	    debugOutput(2, `findTxtRecord for ${host}: ${resolved}`);
             for (const record of resolved) {
                 const joinedRecord = record.join(';');
                 const txtData = parseTxtRecordData(joinedRecord);
@@ -271,6 +329,7 @@ export async function findTxtRecord(host, mockResolve = undefined) {
             }
             const txtData = parseTxtRecordData(head.data);
             if (!txtData[recordParamDestUrl]) continue;
+            debugOutput(2, `findTxtRecord for ${host}: ${txtData[recordParamDestUrl]}`);
             return {
                 url: txtData[recordParamDestUrl],
                 httpStatus: txtData[recordParamHttpStatus],
@@ -286,6 +345,7 @@ export async function findTxtRecord(host, mockResolve = undefined) {
  */
 export function getCertExpiry(cert) {
     const x509 = forge.pki.certificateFromPem(cert);
+    debugOutput(3, `LE cert expire after: ${x509.validity.notAfter.getTime()}`);
     return x509.validity.notAfter.getTime()
 }
 
