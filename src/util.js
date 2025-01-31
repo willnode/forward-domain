@@ -7,6 +7,7 @@ import forge from "node-forge";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
+const validDebugLevels = [0, 1, 2, 3];
 
 /**
  * @type {Record<string, boolean>}
@@ -35,10 +36,6 @@ let whitelistMap = null;
  * @type {number | null}
  */
 let cacheExpirySeconds = null;
-/**
- * @type {boolean | null}
- */
-let debugMode = null
 /**
  * @type {number | null}
  */
@@ -104,7 +101,6 @@ export function clearConfig() {
     useLocalDNS = null;
     blacklistRedirectUrl = null;
     cacheExpirySeconds = null;
-    debugMode = null;
     debugLevel = null;
 }
 
@@ -168,29 +164,22 @@ export function CurrentDate() {
 
 /**
  * Outputs debug messages to the console based on the specified debug level.
- * Debugging is controlled by the `DEBUG_MODE` and `DEBUG_LEVEL` environment variables.
+ * Debugging is controlled by the `DEBUG_LEVEL` environment variable.
  *
  * @param {number} level - The debug level of the message (1 - 3).
  * @param {string} msg - The debug message to output.
  * 
  */
 export function debugOutput(level,msg) {
-   if (debugMode === null) {
-     debugMode = process.env.DEBUG_MODE == 'true';
-   }
-   if (debugLevel === null) {
-     debugLevel = process.env.DEBUG_LEVEL || 1;
-   }
-   if (debugMode) {
-     const date = CurrentDate();
-     if (level === 1 && debugLevel === 1 ) {
- 	   console.log(`[${date}] ${msg}`);
-     } else if (level <= 2 && debugLevel <= 2 ) {
- 	   console.log(`[${date}] ${msg}`);
-     } else if (level <=3 & debugLevel <= 3) {
- 	   console.log(`[${date}] ${msg}`);
-     }
-   }
+    if (debugLevel === null) {
+        debugLevel = validDebugLevels.includes(parseInt(process.env.DEBUG_LEVEL)) ? parseInt(process.env.DEBUG_LEVEL) : 0;
+    }
+    if (debugLevel >= 1) {
+        const date = CurrentDate();
+        if (level <=  debugLevel) {
+        console.log(`[${date}] ${msg}`);
+        }
+    }
 }
 
 /**
