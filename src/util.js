@@ -7,6 +7,7 @@ import forge from "node-forge";
 const recordParamDestUrl = 'forward-domain';
 const recordParamHttpStatus = 'http-status';
 const caaRegex = /^0 issue (")?letsencrypt\.org(;validationmethods=http-01)?\1$/;
+const validDebugLevels = [0, 1, 2, 3];
 
 /**
  * @type {Record<string, boolean>}
@@ -35,6 +36,10 @@ let whitelistMap = null;
  * @type {number | null}
  */
 let cacheExpirySeconds = null;
+/**
+ * @type {number | null}
+ */
+let debugLevel = null
 
 export function getExpiryDate() {
     if (cacheExpirySeconds === null) {
@@ -96,6 +101,7 @@ export function clearConfig() {
     useLocalDNS = null;
     blacklistRedirectUrl = null;
     cacheExpirySeconds = null;
+    debugLevel = null;
 }
 
 /**
@@ -135,6 +141,44 @@ export function isHostBlacklisted(domain = '', mockEnv = undefined) {
             }
         }
         return true;
+    }
+}
+
+/**
+ * Returns the current date and time in the format: "YYYY-MM-DD HH:MM:SS".
+ *
+ * @returns {string} The current date and time as a formatted string.
+ */
+export function CurrentDate() {
+    const now = new Date();
+
+    return (
+        now.getFullYear() + '-' +
+        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+        String(now.getDate()).padStart(2, '0') + ' ' +
+        String(now.getHours()).padStart(2, '0') + ':' +
+        String(now.getMinutes()).padStart(2, '0') + ':' +
+        String(now.getSeconds()).padStart(2, '0')
+    );
+}
+
+/**
+ * Outputs debug messages to the console based on the specified debug level.
+ * Debugging is controlled by the `DEBUG_LEVEL` environment variable.
+ *
+ * @param {number} level - The debug level of the message (1 - 3).
+ * @param {string} msg - The debug message to output.
+ * 
+ */
+export function debugOutput(level,msg) {
+    if (debugLevel === null) {
+        debugLevel = validDebugLevels.includes(parseInt(process.env.DEBUG_LEVEL)) ? parseInt(process.env.DEBUG_LEVEL) : 0;
+    }
+    if (debugLevel >= 1) {
+        const date = CurrentDate();
+        if (level <=  debugLevel) {
+        console.log(`[${date}] ${msg}`);
+        }
     }
 }
 
@@ -201,6 +245,7 @@ const parseTxtRecordData = (value) => {
 export async function validateCAARecords(host, mockResolve = undefined) {
     if (useLocalDNS === null) {
         useLocalDNS = process.env.USE_LOCAL_DNS == 'true';
+	debugOutput(3, `useLocalDNS: ${useLocalDNS}`);
     }
     let issueRecords;
     if (useLocalDNS && !mockResolve) {
@@ -226,6 +271,7 @@ export async function validateCAARecords(host, mockResolve = undefined) {
         return null;
     }
 
+    debugOutput(3, `issueRecords for ${host}: ${issueRecords}`);
     return issueRecords;
 }
 
@@ -247,6 +293,7 @@ export async function findTxtRecord(host, mockResolve = undefined) {
         const resolved = await Promise.any(resolvePromises).catch(() => null);
     
         if (resolved) {
+	    debugOutput(2, `findTxtRecord for ${host}: ${resolved}`);
             for (const record of resolved) {
                 const joinedRecord = record.join(';');
                 const txtData = parseTxtRecordData(joinedRecord);
@@ -271,6 +318,7 @@ export async function findTxtRecord(host, mockResolve = undefined) {
             }
             const txtData = parseTxtRecordData(head.data);
             if (!txtData[recordParamDestUrl]) continue;
+            debugOutput(2, `findTxtRecord for ${host}: ${txtData[recordParamDestUrl]}`);
             return {
                 url: txtData[recordParamDestUrl],
                 httpStatus: txtData[recordParamHttpStatus],
@@ -286,6 +334,7 @@ export async function findTxtRecord(host, mockResolve = undefined) {
  */
 export function getCertExpiry(cert) {
     const x509 = forge.pki.certificateFromPem(cert);
+    debugOutput(3, `LE cert expire after: ${x509.validity.notAfter.getTime()}`);
     return x509.validity.notAfter.getTime()
 }
 

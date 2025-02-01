@@ -12,6 +12,7 @@ import {
     validateCAARecords,
     isExceedHostLimit,
     isHttpCodeAllowed,
+    debugOutput,
     getExpiryDate
 } from "./util.js";
 
@@ -108,6 +109,7 @@ const listener = async function (req, res) {
             res.write('Host header is required');
             return;
         }
+        debugOutput(1, `Received HTTP request for ${host}`);
         if (host === process.env.HOME_DOMAIN) {
             // handle CORS
             res.setHeader('Access-Control-Allow-Origin', '*');
@@ -141,6 +143,7 @@ const listener = async function (req, res) {
                         totalSize += chunk.length;
                         // Disconnect if the data stream is too large
                         if (totalSize > MAX_DATA_SIZE) {
+                            debugOutput(3, `Data stream for request ${host} too large`);
                             req.destroy();
                             return;
                         }
@@ -162,6 +165,7 @@ const listener = async function (req, res) {
                                 if (cacheExists) {
                                     // Remove the cache entry
                                     resolveCache.delete(domain);
+                                    debugOutput(1, `Cache cleared for ${domain}`);
                                 }
                             }
                         }
@@ -176,7 +180,10 @@ const listener = async function (req, res) {
         if (!cache || (Date.now() > cache.expire)) {
             cache = await buildCache(host);
             resolveCache.set(host, cache);
-        }
+            debugOutput(1, `No cache found for ${host}, storing new data`);
+        } else {
+            debugOutput(1, `Found cache for ${host}, using stored data`);
+	    }
         if (cache.blacklisted) {
             if (blacklistRedirectUrl) {
                 res.writeHead(302, {
