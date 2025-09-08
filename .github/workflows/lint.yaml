@@ -27,4 +27,4 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Run hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.2.0
