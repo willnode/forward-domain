@@ -68,7 +68,7 @@ The HTTP codes available for use include:
 ### Is it really free?
 
 Forwarding domains should be easy to setup.<br>
-I use this myself for [domcloud.io](https://domcloud.io).<br>
+I use this myself for [domcloud.dev](https://domcloud.dev).<br>
 
 ### How can I check redirects will work?
 
